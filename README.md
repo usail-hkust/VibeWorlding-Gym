@@ -434,7 +434,7 @@ python start_verl_server_CLI.py \
   --model_path ./models/VibeWorlder-30B-A3B --tp_size 4 --port 8000
 
 export VIBEWORLD_LOCAL_VLLM_URL=http://localhost:8000/v1
-vibeworld --model vibeworlder
+vibeworld --model vibeworlder-local
 ```
 
 All providers stream token-by-token. Switch at runtime with `/model`:
