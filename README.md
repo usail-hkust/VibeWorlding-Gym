@@ -6,13 +6,42 @@ intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
 agent–environment interaction.
 
-![VibeWorlding framework](docs/figures/framework.png)
-
 <p align="center">
   📊<a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
   🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
 </p>
 
+## Watch it build a world
+
+The same agent handles both task families end-to-end: **construction** (build
+a scene from nothing but a text query) and **refinement** (edit an existing
+scene by intent). Both clips are the actual multi-turn tool-call loop, not a
+mockup.
+
+<table>
+<tr>
+<th align="center">3D World Construction</th>
+<th align="center">3D World Refinement</th>
+</tr>
+<tr>
+<td>
+
+<video src="docs/video/construction-demo.mp4" controls width="380"></video>
+
+</td>
+<td>
+
+<video src="docs/video/refinement-demo.mp4" controls width="380"></video>
+
+</td>
+</tr>
+</table>
+
+---
+
+## 1. Introduction
+
+![VibeWorlding framework](docs/figures/framework.png)
 
 The framework has two halves that share the same Blender sandbox. **VWE-Bench**
 (left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
@@ -21,11 +50,6 @@ and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (ri
 is the training framework: the same sandbox is exposed to the agent as MCP-style
 tools, and the same verifier is used as the reward service for joint multimodal
 RL post-training.
-
----
-
-
-## 1. Introduction
 
 The exact role of every box in the figure maps to a concrete component in this repo:
 
@@ -233,7 +257,7 @@ type (`generate` vs `refine`) is auto-detected per case from `query.json`.
 python main.py \
   --base_data_dir data/test \
   --log_dir log/eval_test \
-  --model_type gemini --model_name gemini-2.5-pro \
+  --model_type gemini --model_name gemini-3.1-pro \
   --server http://localhost:8080 \
   --retrieve_server http://localhost:8081 \
   --quality "低质量 (快速预览)" \
@@ -261,7 +285,7 @@ Each case writes `final_map.json`, `sft_trajectory.json`, and `final_image/` int
 ```bash
 python eval.py \
   --result_dir log/eval_test \
-  --model_type gemini --model_name gemini-2.5-flash
+  --model_type gemini --model_name gemini-3.5-flash
 ```
 
 Cases are dispatched to one of three **scoring routes** automatically. These
@@ -300,9 +324,9 @@ directory — that file is what the packer reads to decide what to keep.
 
 ```bash
 python main.py --base_data_dir data/sft --log_dir log/sample_train \
-  --model_type gemini --model_name gemini-2.5-pro --max_turns 8
+  --model_type gemini --model_name gemini-3.1-pro --max_turns 8
 python eval.py --result_dir log/sample_train \
-  --model_type gemini --model_name gemini-2.5-flash
+  --model_type gemini --model_name gemini-3.5-flash
 ```
 
 `data/sft` ships 5,460 **raw cases** — one directory per case with `query.json`,
@@ -494,13 +518,12 @@ python start_verl_server_CLI.py \
   --model_path ./models/VibeWorlder-30B-A3B --tp_size 4 --port 8000
 
 export VIBEWORLD_LOCAL_VLLM_URL=http://localhost:8000/v1
-vibeworld --model vibeworlder-local
+vibeworld --model vibeworlder
 ```
 
 All providers stream token-by-token. Switch at runtime with `/model`:
-our local models (`vibeworlder`, `vibeworlder-8b`), Gemini official (`gemini`,
-`gemini-flash`), OpenAI official (`gpt4o`, `gpt4o-mini`), and Bailian /
-DashScope (`qwen`, `qwen-vl`).
+our local models (`vibeworlder`), Gemini official (`gemini-flash`,
+`gemini-pro`), OpenAI official (`gpt5`), and Bailian / DashScope (`qwen`, `k3`).
 
 ---
 
