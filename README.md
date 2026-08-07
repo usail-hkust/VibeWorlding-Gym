@@ -49,10 +49,6 @@ benchmark.
 
 ![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
 
-> **Interactive 3D gallery** — open [`docs/gallery/index.html`](docs/gallery/index.html)
-> in a browser to orbit, zoom, and inspect a selection of assets and worlds in
-> 3D (powered by `<model-viewer>`; the GLB files are in
-> `docs/gallery/glb/`).
 
 ### The agent loop
 
