@@ -1,4 +1,10 @@
 # VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
+<p align="center">
+  📊<a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
+  🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
+</p>
+![VibeWorlding framework](docs/figures/framework.png)
+
 
 VibeWorlding is a unified open-source framework for **benchmarking and
 training vibe worlding agents** — multimodal agents that autonomously infer user
@@ -13,13 +19,6 @@ and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (ri
 is the training framework: the same sandbox is exposed to the agent as MCP-style
 tools, and the same verifier is used as the reward service for joint multimodal
 RL post-training.
-
-![VibeWorlding framework](docs/figures/framework.png)
-
-<p align="center">
-  📊<a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
-  🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
-</p>
 
 ---
 
