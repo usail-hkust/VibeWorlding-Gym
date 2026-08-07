@@ -1,4 +1,4 @@
-# VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?**
+# VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
 VibeWorlding is a unified open-source framework for **benchmarking and
 training vibe worlding agents** — multimodal agents that autonomously infer user
