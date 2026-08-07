@@ -6,6 +6,14 @@ intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
 agent–environment interaction.
 
+The framework has two halves that share the same Blender sandbox. **VWE-Bench**
+(left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
+seed worlds, and 6,721 reverse-synthesized queries spanning world *construction*
+and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (right)
+is the training framework: the same sandbox is exposed to the agent as MCP-style
+tools, and the same verifier is used as the reward service for joint multimodal
+RL post-training.
+
 ![VibeWorlding framework](docs/figures/framework.png)
 
 <p align="center">
@@ -15,13 +23,6 @@ agent–environment interaction.
 
 ---
 
-The framework has two halves that share the same Blender sandbox. **VWE-Bench**
-(left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
-seed worlds, and 6,721 reverse-synthesized queries spanning world *construction*
-and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (right)
-is the training framework: the same sandbox is exposed to the agent as MCP-style
-tools, and the same verifier is used as the reward service for joint multimodal
-RL post-training.
 
 ## 1. Introduction
 
