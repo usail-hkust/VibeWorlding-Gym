@@ -8,7 +8,7 @@ agent–environment interaction.
 
 The framework has two halves that share the same Blender sandbox. **VWE-Bench**
 (left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
-seed worlds, and 6,721 reverse-synthesized queries spanning world *construction*
+seed worlds, and 6,828 reverse-synthesized queries spanning world *construction*
 and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (right)
 is the training framework: the same sandbox is exposed to the agent as MCP-style
 tools, and the same verifier is used as the reward service for joint multimodal
