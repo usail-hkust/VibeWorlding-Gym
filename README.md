@@ -26,17 +26,7 @@ RL post-training.
 
 ## 1. Introduction
 
-The exact role of every box in the figure maps to a concrete
-component in this repo:
-
-| Box in the figure | Component in this repo |
-|---|---|
-| Sandbox Environment → Asset Retrieval / Editing / Rendering | `assets_retrieval/` (`:8081`) + `render_in_blender/` (`:8080`) |
-| Rubric-based Verifier → Physical Feasibility + Intent Fulfillment | `verifier/` (3 routes: `generate`, `refine-verified`, `refine-unverified`) |
-| Joint Multimodal RL Post-Training → Trajectory Sampling → SFT → RL | `main.py` (sample) → `data/sft_data_process.py` (pack) → `verl/run_map_gen_sft.sh` → `verl/run_map_gen_grpo.sh` |
-| Final Output → Interactive 3D World (Simulation-ready) | `main.py` writes `final_map.json` + `final_image/`, playable in the CLI (`CLI_Demo/`) |
-
-The full stack:
+The exact role of every box in the figure maps to a concrete component in this repo:
 
 | Component | What it is |
 |---|---|
