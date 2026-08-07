@@ -16,9 +16,7 @@ agent–environment interaction.
 The same agent handles both task families end-to-end: **construction** (build
 a scene from nothing but a text query) and **refinement** (edit an existing
 scene by intent). Both clips are the actual multi-turn tool-call loop, not a
-mockup. Click a thumbnail to play the video (git.woa.com's README renderer
-strips inline `<video>` tags, so this links straight to the file — it opens in
-the platform's built-in player).
+mockup.
 
 <table>
 <tr>
@@ -28,12 +26,12 @@ the platform's built-in player).
 <tr>
 <td align="center">
 
-[![3D World Construction demo](docs/figures/construction-thumb.png)](docs/video/construction-demo.mp4)
+![3D World Construction demo](docs/video/construction-demo.gif)
 
 </td>
 <td align="center">
 
-[![3D World Refinement demo](docs/figures/refinement-thumb.png)](docs/video/refinement-demo.mp4)
+![3D World Refinement demo](docs/video/refinement-demo.gif)
 
 </td>
 </tr>
