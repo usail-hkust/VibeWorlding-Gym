@@ -1,15 +1,15 @@
 # VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
+<p align="center">
+  📊 <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
+  🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
+</p>
+
 VibeWorlding is a unified open-source framework for **benchmarking and
 training vibe worlding agents** — multimodal agents that autonomously infer user
 intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
 agent–environment interaction.
-
-<p align="center">
-  📊<a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
-  🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
-</p>
 
 ## Watch it build a world
 
@@ -18,24 +18,17 @@ a scene from nothing but a text query) and **refinement** (edit an existing
 scene by intent). Both clips are the actual multi-turn tool-call loop, not a
 mockup.
 
-<table>
-<tr>
-<th align="center">3D World Construction</th>
-<th align="center">3D World Refinement</th>
-</tr>
-<tr>
-<td align="center">
+**3D World Construction** — build a scene from a text query:
 
-![3D World Construction demo](docs/video/construction-demo.gif)
+<p align="center">
+  <img src="docs/video/construction-demo.gif" alt="3D World Construction demo" width="760">
+</p>
 
-</td>
-<td align="center">
+**3D World Refinement** — edit an existing scene by intent:
 
-![3D World Refinement demo](docs/video/refinement-demo.gif)
-
-</td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/video/refinement-demo.gif" alt="3D World Refinement demo" width="760">
+</p>
 
 ---
 
@@ -51,61 +44,23 @@ is the training framework: the same sandbox is exposed to the agent as MCP-style
 tools, and the same verifier is used as the reward service for joint multimodal
 RL post-training.
 
-The exact role of every box in the figure maps to a concrete component in this repo:
+**How the agent works.** Each turn the agent observes the current 3D map plus 5
+rendered views, then calls tools — `retrieve_assets`, `add`, `delete`,
+`rotation_and_translation`. The scene is re-rendered and fed back, so the agent
+can *see* what it built and fix it.
+
+The role of every box in the figure maps to a concrete component in this repo:
 
 | Component | What it is |
 |---|---|
 | **Sandbox environment** | Asset retrieval + PCG editing + Blender rendering, exposed to the agent as tools |
 | **Rubric-based verifier** | Physical feasibility (collision, floating, bounds) + intent fulfillment; usable both as an evaluator and as an RL reward service |
-| **VWE-Bench data** | 2,617 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries (see Table 2 below) |
+| **VWE-Bench data** | 2,617 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries |
 | **Training recipes** | SFT and multimodal RL (GRPO) on top of `verl` |
 | **Baselines** | SceneWeaver / SAGE / SceneAssistant reproduced in the same sandbox |
 | **CLI** | An interactive terminal agent for building worlds live |
 
-### The 3D asset & seed-world library
-
-The sandbox is built on a curated library of **2,617 GLB assets** (furniture,
-vegetation, buildings, vehicles, food, … — each with a 5-digit `type_id`,
-display name, scale class, and per-asset orientation correction) and **323
-human-annotated seed 3D worlds** (23–126 placed assets per world, ranging from
-riverside hamlets to dense villa towns). Every asset and every seed world ships
-in this repo so the agent is working with the exact same geometry as the
-benchmark.
-
-![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
-
-
-### The agent loop
-
-Each turn the agent observes the current 3D map plus 5 rendered views, then calls
-tools: `retrieve_assets`, `add`, `delete`, `rotation_and_translation`. The scene
-is re-rendered and fed back, so the agent can *see* what it built and fix it.
-
-### Query taxonomy (VWE-Bench)
-
-Queries split into two task families. Only *asset-level edit (precise)* has a
-ground-truth map and is **verified**; the rest are **unverified** and scored by an
-MLLM judge against our rubrics.
-
-| Query type | Sub-type | Count |
-|---|---|--:|
-| **3D world construction** | Theme only | 322 |
-| | Theme + elements | 620 |
-| | Full blueprint | 302 |
-| | Distractor | 120 |
-| **3D world refinement** | Asset-level edit (precise) | 1,710 |
-| | Asset-level edit (fuzzy) | 1,462 |
-| | Scene critique | 553 |
-| | Scene guidance | 757 |
-| | Scene restatement | 477 |
-| | Complex description | 505 |
-| **Total** | | **6,828** |
-
-Every `query.json` carries `query_category` + `query_type` (the labels above),
-plus `query_tag` for internal bookkeeping and `verifier_type` (`verified` /
-`unverified`) which selects the scoring route.
-
-### Repository layout
+### Repository outline
 
 ```
 VibeWorlding-Gym/
@@ -134,31 +89,132 @@ VibeWorlding-Gym/
 └── log/                     # sampling / eval outputs
 ```
 
-### Environment
+---
 
-Python 3.12 with `torch 2.10.0+cu129`, `vllm 0.17.0`, `transformers 4.57.6`.
-The two services and the training stack can run on separate machines.
+## 2. VWE-Bench Statistics
 
-> **The two sandbox services have their own environments and install steps — set
-> them up by following their own READMEs, not the snippet below:**
-> **[`assets_retrieval/README.md`](assets_retrieval/README.md)** (retrieval
-> service, needs the embedding model) and
-> **[`render_in_blender/README.md`](render_in_blender/README.md)** (PCG rendering
-> service, needs Blender 4.2.x + the GLB asset library). The commands here only
-> cover the agent/evaluation client and the training stack.
+VWE-Bench is what the agent is benchmarked and trained on. It is built from
+three ingredients, all shipped in this repo.
+
+**Assets & seed worlds.** A curated library of **2,617 GLB assets** (furniture,
+vegetation, buildings, vehicles, food, … — each with a 5-digit `type_id`,
+display name, scale class, and per-asset orientation correction) and **323
+human-annotated seed 3D worlds** (23–126 placed assets per world, ranging from
+riverside hamlets to dense villa towns). The agent works with the exact same
+geometry as the benchmark.
+
+![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
+
+> **Interactive 3D gallery** — open [`docs/gallery/index.html`](docs/gallery/index.html)
+> in a browser to orbit and zoom a selection of assets and worlds in 3D
+> (powered by `<model-viewer>`; GLB files under `docs/gallery/glb/`).
+
+**Queries.** 6,828 reverse-synthesized multimodal queries split into two task
+families. Only *asset-level edit (precise)* has a ground-truth map and is
+**verified** (rule-based); the rest are **unverified** and scored by an MLLM
+judge against our rubrics.
+
+| Query category | Query type | Verified? | Count |
+|---|---|:--:|--:|
+| **3D world construction** | Theme only | | 322 |
+| | Theme + elements | | 620 |
+| | Full blueprint | | 302 |
+| | Distractor | | 120 |
+| **3D world refinement** | Asset-level edit (precise) | ✅ | 1,710 |
+| | Asset-level edit (fuzzy) | | 1,462 |
+| | Scene critique | | 553 |
+| | Scene guidance | | 757 |
+| | Scene restatement | | 477 |
+| | Complex description | | 505 |
+| **Total** | | **1,710 verified** | **6,828** |
+
+Every `query.json` carries `query_category` + `query_type` (the labels above),
+plus `query_tag` for internal bookkeeping and `verifier_type` (`verified` /
+`unverified`) which selects the scoring route (see §4).
+
+**Data splits in this repo:**
+
+| Split | Location | Contents |
+|---|---|---|
+| Evaluation | `data/test/` | 254 cases (leaderboard) |
+| SFT | `data/sft/` | 5,460 raw cases → pack into parquet (§5) |
+| RL | `data/rl/` | 906 / 101 rollout prompts (`train.parquet` / `test.parquet`) |
+
+---
+
+## 3. 3D Sandbox Preparation
+
+The agent cannot do anything until the sandbox is up: (a) the two services — PCG
+rendering and asset retrieval — and (b) the training stack under `verl/`. Set
+them up in this order.
+
+**Runtime:** Python 3.12 with `torch 2.10.0+cu129`, `vllm 0.17.0`,
+`transformers 4.57.6`. The services and the training stack can live on separate
+machines. API keys are read from the environment — nothing is hardcoded.
+
+### 3.1 PCG rendering service
+
+Follow **[`render_in_blender/README.md`](render_in_blender/README.md)** — install
+Blender 4.2.x and place the GLB assets (`assets/models/clone/`, download from
+[VWE-Bench](https://huggingface.co/datasets/usail-hkust/VWE-Bench) if not already
+present). Rendering is GPU-bound, so run several workers per GPU:
 
 ```bash
-# agent / evaluation client
+# PCG rendering  ->  :8080
+# WORKERS_PER_GPU=8 starts 8 render workers per GPU behind a sticky proxy on :8080.
+# Use WORKERS=1 for a quick single-worker install check.
+cd render_in_blender && BLENDER_EXE=/opt/blender-4.2.0-linux-x64/blender \
+  WORKERS_PER_GPU=8 PORT=8080 bash deploy.sh
+```
+
+Verify — render the bundled example scene into 5 views:
+
+```bash
+python render_raw_data_images.py \
+  --raw_data_dir ./render_in_blender/assets/cmds/ \
+--server http://localhost:8080 \
+  --quality "低质量 (快速预览)"
+```
+
+### 3.2 Asset retrieval service
+
+Follow **[`assets_retrieval/README.md`](assets_retrieval/README.md)** — place the
+`VibeWorlder-Embedding-4B` model (from the
+[model collection](https://huggingface.co/collections/usail-hkust/vibeworlder)),
+then launch:
+
+```bash
+# asset retrieval  ->  :8081
+cd assets_retrieval && PORT=8081 bash deploy.sh
+```
+
+Verify — a text query should return ranked assets with 5-digit `type_id`:
+
+```bash
+curl -s -X POST "http://localhost:8081/recommend/single_slot" \
+  -H "Content-Type: application/json" \
+  -d '{"entity_name": "探险木屋", "top_k": 3}' | python3 -m json.tool
+```
+
+Point the agent / client at both services:
+
+```bash
+export VIBEWORLD_RENDER_SERVER=http://localhost:8080
+export VIBEWORLD_RETRIEVE_SERVER=http://localhost:8081
+```
+
+### 3.3 Client & `verl` install
+
+```bash
+# agent / evaluation client (main.py, eval.py)
 pip install openai google-genai gradio-client httpx requests pillow numpy
 
 # SFT data packing (data/sft_data_process.py)
 pip install pyarrow pillow numpy
 
-# training environment
+# training stack (SFT + RL on verl)
 pip install -r verl/requirements.txt
 ```
-
-API keys are read from the environment — nothing is hardcoded:
 
 ```bash
 export GEMINI_API_KEY=your_gemini_api_key
@@ -168,63 +224,7 @@ export DASHSCOPE_API_KEY=your_dashscope_api_key   # Bailian / DashScope
 
 ---
 
-## 2. Asset Retrieval and PCG Rendering Service Preparation
-
-The agent cannot do anything until both sandbox services are up. Follow:
-
-- **[`assets_retrieval/README.md`](assets_retrieval/README.md)** — download
-  `VibeWorlder-Embedding-4B` from the
-  [model collection](https://huggingface.co/collections/usail-hkust/vibeworlder)
-  and start the retrieval service.
-- **[`render_in_blender/README.md`](render_in_blender/README.md)** — install
-  Blender 4.2.x, download the GLB assets from
-  [VWE-Bench](https://huggingface.co/datasets/usail-hkust/VWE-Bench), and start
-  the rendering service.
-
-Quick start — **only after** you have followed both READMEs above to install
-their environments and place the model / GLB assets; these two commands just
-launch the already-prepared services:
-
-```bash
-# asset retrieval  ->  :8081
-cd assets_retrieval && PORT=8081 bash deploy.sh
-
-# PCG rendering    ->  :8080
-# WORKERS_PER_GPU=8 starts 8 render workers per GPU behind a sticky proxy on :8080.
-# Use WORKERS=1 for a quick single-worker install check.
-cd render_in_blender && BLENDER_EXE=/opt/blender-4.2.0-linux-x64/blender \
-  WORKERS_PER_GPU=8 PORT=8080 bash deploy.sh
-```
-
-### Verify both services
-
-Asset retrieval — a text query should return ranked assets with 5-digit `type_id`:
-
-```bash
-curl -s -X POST "http://localhost:8081/recommend/single_slot" \
-  -H "Content-Type: application/json" \
-  -d '{"entity_name": "探险木屋", "top_k": 3}' | python3 -m json.tool
-```
-
-PCG rendering — render the bundled example scene into 5 views:
-
-```bash
-python render_raw_data_images.py \
-  --raw_data_dir ./render_in_blender/assets/cmds/ \
-  --server http://localhost:8080 \
-  --quality "低质量 (快速预览)"
-```
-
-Then point the agent at them:
-
-```bash
-export VIBEWORLD_RETRIEVE_SERVER=http://localhost:8081
-export VIBEWORLD_RENDER_SERVER=http://localhost:8080
-```
-
----
-
-## 3. Sampling and Evaluation
+## 4. Sampling and Evaluation
 
 The same loop is used for both leaderboard evaluation and for SFT/RL trajectory
 generation: an agent reads a query, calls tools over multi-turn interaction, and
@@ -233,7 +233,7 @@ leaderboard below, run `main.py` then `eval.py` over `data/test/` (254 cases).
 
 ![VWE-Bench leaderboard (Pass@1) on Verified and Unverified query sets](docs/figures/leaderboard.png)
 
-The two panels show the same models on the two query families introduced in §1.
+The two panels show the same models on the two query families introduced in §2.
 **Verified** (left) is rule-based and tests whether the model can hit a known
 target map. **Unverified** (right) is judged by an MLLM against intent rubrics
 and is where training pays off most — note how the VibeWorlder models (the last
@@ -290,7 +290,7 @@ python eval.py \
 
 Cases are dispatched to one of three **scoring routes** automatically. These
 route names are an implementation detail of the verifier — they are *not* the
-paper's taxonomy. The mapping to the Table 2 categories above is:
+paper's taxonomy. The mapping to the §2 query categories is:
 
 | Route | Condition | Covers (paper taxonomy) | Scoring |
 |---|---|---|---|
@@ -312,7 +312,7 @@ Baselines are sampled and scored the exact same way — see
 
 ---
 
-## 4. SFT Training
+## 5. SFT Training
 
 SFT is rejection-sampled: you sample trajectories, keep only the ones that pass
 the verifier, and train on those. Three steps.
@@ -387,7 +387,7 @@ The resulting checkpoint can then warm-start RL — see the next section.
 
 ---
 
-## 5. RL Training
+## 6. RL Training
 
 ![Reward curves on the validation set and per-query-type (cold-start vs SFT-initialized)](docs/figures/rl_reward.png)
 
@@ -398,7 +398,7 @@ gives the reward. The figure shows the key empirical finding: **cold-starting RL
 from the base model (solid) learns slowly and flattens early, while initializing
 from the SFT checkpoint (dashed) climbs steadily and pulls ahead on every
 split** — most dramatically on the verification set, where the reward more than
-doubles. That is why the pipeline in §4 ends with "warm-start RL from SFT", and
+doubles. That is why the pipeline in §5 ends with "warm-start RL from SFT", and
 why the `run_map_gen_grpo*.sh` scripts' default is the base model but the
 recommended override is your SFT output:
 
@@ -496,7 +496,7 @@ Project-specific integration lives in:
 
 ---
 
-## 6. VibeWorld CLI
+## 7. VibeWorld CLI
 
 An interactive terminal agent — describe a world and watch it get built, with a
 live browser 3D viewer. See [`CLI_Demo/README.md`](CLI_Demo/README.md).
@@ -527,7 +527,7 @@ our local models (`vibeworlder`), Gemini official (`gemini-flash`,
 
 ---
 
-## 7. Citation
+## 8. Citation
 
 ```bibtex
 
