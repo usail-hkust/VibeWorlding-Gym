@@ -49,19 +49,19 @@ Queries split into two task families. Only *asset-level edit (precise)* has a
 ground-truth map and is **verified**; the rest are **unverified** and scored by an
 MLLM judge against our rubrics.
 
-| Query type | Sub-type | Verified | Count |
-|---|---|:--:|--:|
-| **3D world construction** | Theme only | | 322 |
-| | Theme + elements | | 620 |
-| | Full blueprint | | 302 |
-| | Distractor | | 120 |
-| **3D world refinement** | Asset-level edit (precise) | ✅ | 1,710 |
-| | Asset-level edit (fuzzy) | | 1,462 |
-| | Scene critique | | 553 |
-| | Scene guidance | | 757 |
-| | Scene restatement | | 477 |
-| | Complex description | | 505 |
-| **Total** | | **1,710** verified | **6,828** |
+| Query type | Sub-type | Count |
+|---|---|--:|
+| **3D world construction** | Theme only | 322 |
+| | Theme + elements | 620 |
+| | Full blueprint | 302 |
+| | Distractor | 120 |
+| **3D world refinement** | Asset-level edit (precise) | 1,710 |
+| | Asset-level edit (fuzzy) | 1,462 |
+| | Scene critique | 553 |
+| | Scene guidance | 757 |
+| | Scene restatement | 477 |
+| | Complex description | 505 |
+| **Total** | | **6,828** |
 
 Every `query.json` carries `query_category` + `query_type` (the labels above),
 plus `query_tag` for internal bookkeeping and `verifier_type` (`verified` /
