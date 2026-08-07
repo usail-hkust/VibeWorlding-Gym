@@ -1,4 +1,11 @@
 # VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
+
+VibeWorlding is a unified open-source framework for **benchmarking and
+training vibe worlding agents** — multimodal agents that autonomously infer user
+intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
+reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
+agent–environment interaction.
+
 ![VibeWorlding framework](docs/figures/framework.png)
 
 <p align="center">
@@ -6,11 +13,6 @@
   🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
 </p>
 
-VibeWorlding is a unified open-source framework for **benchmarking and
-training vibe worlding agents** — multimodal agents that autonomously infer user
-intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
-reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
-agent–environment interaction.
 
 The framework has two halves that share the same Blender sandbox. **VWE-Bench**
 (left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
