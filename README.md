@@ -1,8 +1,6 @@
-# VibeWorlding-Gym
+# VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?**
 
-**Can Multimodal Agents Construct 3D Open Worlds End-to-End?**
-
-VibeWorlding-Gym is a unified open-source framework for **benchmarking and
+VibeWorlding is a unified open-source framework for **benchmarking and
 training vibe worlding agents** — multimodal agents that autonomously infer user
 intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
