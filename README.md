@@ -37,6 +37,23 @@ The exact role of every box in the figure maps to a concrete component in this r
 | **Baselines** | SceneWeaver / SAGE / SceneAssistant reproduced in the same sandbox |
 | **CLI** | An interactive terminal agent for building worlds live |
 
+### The 3D asset & seed-world library
+
+The sandbox is built on a curated library of **2,617 GLB assets** (furniture,
+vegetation, buildings, vehicles, food, … — each with a 5-digit `type_id`,
+display name, scale class, and per-asset orientation correction) and **323
+human-annotated seed 3D worlds** (23–126 placed assets per world, ranging from
+riverside hamlets to dense villa towns). Every asset and every seed world ships
+in this repo so the agent is working with the exact same geometry as the
+benchmark.
+
+![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
+
+> **Interactive 3D gallery** — open [`docs/gallery/index.html`](docs/gallery/index.html)
+> in a browser to orbit, zoom, and inspect a selection of assets and worlds in
+> 3D (powered by `<model-viewer>`; the GLB files are in
+> `docs/gallery/glb/`).
+
 ### The agent loop
 
 Each turn the agent observes the current 3D map plus 5 rendered views, then calls
