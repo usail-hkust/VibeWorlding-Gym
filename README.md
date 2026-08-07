@@ -24,13 +24,31 @@ understand intent, use 3D tools, and reason over textual *and* visual 3D world
 information. The lack of an open framework also blocks study of whether training
 (e.g. agentic RL post-training) improves these capabilities.
 
-This repository provides the full stack:
+![VibeWorlding framework](docs/figures/framework.png)
+
+The framework has two halves that share the same Blender sandbox. **VWE-Bench**
+(left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
+seed worlds, and 6,721 reverse-synthesized queries spanning world *construction*
+and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (right)
+is the training framework: the same sandbox is exposed to the agent as MCP-style
+tools, and the same verifier is used as the reward service for joint multimodal
+RL post-training. The exact role of every box in the figure maps to a concrete
+component in this repo:
+
+| Box in the figure | Component in this repo |
+|---|---|
+| Sandbox Environment → Asset Retrieval / Editing / Rendering | `assets_retrieval/` (`:8081`) + `render_in_blender/` (`:8080`) |
+| Rubric-based Verifier → Physical Feasibility + Intent Fulfillment | `verifier/` (3 routes: `generate`, `refine-verified`, `refine-unverified`) |
+| Joint Multimodal RL Post-Training → Trajectory Sampling → SFT → RL | `main.py` (sample) → `data/sft_data_process.py` (pack) → `verl/run_map_gen_sft.sh` → `verl/run_map_gen_grpo.sh` |
+| Final Output → Interactive 3D World (Simulation-ready) | `main.py` writes `final_map.json` + `final_image/`, playable in the CLI (`CLI_Demo/`) |
+
+The full stack:
 
 | Component | What it is |
 |---|---|
 | **Sandbox environment** | Asset retrieval + PCG editing + Blender rendering, exposed to the agent as tools |
 | **Rubric-based verifier** | Physical feasibility (collision, floating, bounds) + intent fulfillment; usable both as an evaluator and as an RL reward service |
-| **VWE-Bench data** | 2,617 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries |
+| **VWE-Bench data** | 2,617 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries (see Table 2 below) |
 | **Training recipes** | SFT and multimodal RL (GRPO) on top of `verl` |
 | **Baselines** | SceneWeaver / SAGE / SceneAssistant reproduced in the same sandbox |
 | **CLI** | An interactive terminal agent for building worlds live |
@@ -150,7 +168,10 @@ launch the already-prepared services:
 cd assets_retrieval && PORT=8081 bash deploy.sh
 
 # PCG rendering    ->  :8080
-cd render_in_blender && BLENDER_EXE=/opt/blender-4.2.0-linux-x64/blender PORT=8080 bash deploy.sh
+# WORKERS_PER_GPU=8 starts 8 render workers per GPU behind a sticky proxy on :8080.
+# Use WORKERS=1 for a quick single-worker install check.
+cd render_in_blender && BLENDER_EXE=/opt/blender-4.2.0-linux-x64/blender \
+  WORKERS_PER_GPU=8 PORT=8080 bash deploy.sh
 ```
 
 ### Verify both services
@@ -182,6 +203,28 @@ export VIBEWORLD_RENDER_SERVER=http://localhost:8080
 ---
 
 ## 3. Sampling and Evaluation
+
+The same loop is used for both leaderboard evaluation and for SFT/RL trajectory
+generation: an agent reads a query, calls tools over multi-turn interaction, and
+the resulting scene is scored by the verifier. To reproduce the VWE-Bench
+leaderboard below, run `main.py` then `eval.py` over `data/test/` (254 cases).
+
+![VWE-Bench leaderboard (Pass@1) on Verified and Unverified query sets](docs/figures/leaderboard.png)
+
+The two panels show the same models on the two query families introduced in §1.
+**Verified** (left) is rule-based and tests whether the model can hit a known
+target map. **Unverified** (right) is judged by an MLLM against intent rubrics
+and is where training pays off most — note how the VibeWorlder models (the last
+two bars in each panel, ours) lead on the unverified split after joint
+multimodal RL post-training. Use this figure to pick a model:
+
+- **Strongest public baseline**: GPT-5.5 leads on Verified (rule-following),
+  Gemini-3.5-flash leads on Unverified (intent following).
+- **Our 8B / 30B models** (VibeWorlder-8B and VibeWorlder-30B-A3B) are
+  competitive with the strongest closed models on Verified and beat them on
+  Unverified after post-training.
+- **Pick your serving cost** — the small open VibeWorlder-8B is a good default
+  for `main.py`; the larger 30B is what the `verl/` recipes train.
 
 ### Sampling with `main.py`
 
@@ -324,10 +367,29 @@ The resulting checkpoint can then warm-start RL — see the next section.
 
 ## 5. RL Training
 
+![Reward curves on the validation set and per-query-type (cold-start vs SFT-initialized)](docs/figures/rl_reward.png)
+
+Joint multimodal RL post-training on top of an SFT checkpoint. Each rollout
+issues real `retrieve_assets` / `add` / `delete` / `rotation_and_translation`
+calls against the live services, then the same verifier used for evaluation
+gives the reward. The figure shows the key empirical finding: **cold-starting RL
+from the base model (solid) learns slowly and flattens early, while initializing
+from the SFT checkpoint (dashed) climbs steadily and pulls ahead on every
+split** — most dramatically on the verification set, where the reward more than
+doubles. That is why the pipeline in §4 ends with "warm-start RL from SFT", and
+why the `run_map_gen_grpo*.sh` scripts' default is the base model but the
+recommended override is your SFT output:
+
+```bash
+HF_MODEL_PATH=./models/ckpt/map_gen_sft/<exp>/global_step_N/actor/huggingface \
+bash run_map_gen_grpo.sh
+```
+
 Multimodal agentic RL (GRPO) where the reward comes from the same verifier used
 for evaluation, and rollouts call the live retrieval + rendering services. Start
-both services first — RL throughput depends on them, so consider running the
-renderer with `WORKERS=8`.
+both services first. RL throughput is gated by the renderer, so run it with
+several workers per GPU — `WORKERS_PER_GPU=8 bash deploy.sh` (64 workers on an
+8-GPU node); see [`render_in_blender/README.md`](render_in_blender/README.md).
 
 `verified` queries are scored by rule against `gt_map` (no LLM at all).
 `unverified` queries need an MLLM judge, and there are two transports for it:
