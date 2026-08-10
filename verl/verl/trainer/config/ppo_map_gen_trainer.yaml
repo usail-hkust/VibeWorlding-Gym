@@ -1,0 +1,65 @@
+# 地图生成任务PPO/GRPO训练配置
+# 继承自ppo_megatron_trainer.yaml，添加地图生成特有配置
+
+defaults:
+  - ppo_megatron_trainer
+
+# 数据配置
+data:
+  # 多模态数据键
+  image_key: "images"
+  video_key: "videos"
+  prompt_key: "prompt"
+  
+  # 工具配置
+  tool_config_path: null  # 将在命令行中指定
+  
+  # 多轮交互配置
+  multi_turn:
+    enable: true
+    max_user_turns: 8
+    max_assistant_turns: 8
+    tool_config_path: null
+    format: "qwen3_vl"
+    
+    # 地图生成特有配置
+    auto_render: true
+    pcg_server_url: "http://localhost:8080"
+    enable_verify: true
+    verify_model: "gemini"
+
+# Rollout配置
+actor_rollout_ref:
+  rollout:
+    # Agent Loop配置
+    agent:
+      agent_loop_manager_class: "verl.experimental.agent_loop.map_gen_agent_loop.MapGenAgentLoop"
+      num_workers: 4
+    
+    # 多轮配置
+    multi_turn:
+      enable: true
+      max_user_turns: 8
+      max_assistant_turns: 8
+      max_parallel_calls: 1
+      max_tool_response_length: 2048
+      tool_response_truncate_side: "right"
+      tool_config_path: null
+      format: "qwen3_vl"
+      
+      # 地图生成特有
+      auto_render: true
+      pcg_server_url: "http://localhost:8080"
+      enable_verify: true
+
+# Reward配置
+reward:
+  reward_manager:
+    source: "register"  # 或 "importlib"
+    name: "naive_reward_manager"
+  
+  # 自定义reward函数
+  custom_reward_function:
+    path: "verl.utils.reward_score.map_gen_reward"
+    name: "map_gen_compute_score"
+    reward_kwargs: {}
