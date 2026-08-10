@@ -105,10 +105,6 @@ geometry as the benchmark.
 
 ![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
 
-> **Interactive 3D gallery** — open [`docs/gallery/index.html`](docs/gallery/index.html)
-> in a browser to orbit and zoom a selection of assets and worlds in 3D
-> (powered by `<model-viewer>`; GLB files under `docs/gallery/glb/`).
-
 **Queries.** 6,828 reverse-synthesized multimodal queries split into two task
 families. Only *asset-level edit (precise)* has a ground-truth map and is
 **verified** (rule-based); the rest are **unverified** and scored by an MLLM
