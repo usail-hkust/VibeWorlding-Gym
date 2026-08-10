@@ -417,8 +417,7 @@ bash run_map_gen_grpo.sh                                            # single nod
 NODE_RANK=0 MASTER_ADDR=<master-node-ip> bash run_map_gen_grpo_multinode.sh
 ```
 
-We recommend a **flash-tier** judge here rather than a pro-tier one: RL issues a
-judge call for every unverified rollout, so latency and cost dominate throughput,
+RL issues a judge call for every unverified rollout, so latency and cost dominate throughput,
 and the rubric is coarse enough that flash tracks pro closely.
 
 RL starts from the **base model** by default (`Qwen3-VL-8B-Thinking` single node,
