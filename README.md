@@ -288,8 +288,7 @@ python eval.py \
 ```
 
 Cases are dispatched to one of three **scoring routes** automatically. These
-route names are an implementation detail of the verifier — they are *not* the
-paper's taxonomy. The mapping to the §2 query categories is:
+route names are an implementation detail of the verifier. The mapping to the §2 query categories is:
 
 | Route | Condition | Covers (paper taxonomy) | Scoring |
 |---|---|---|---|
