@@ -462,18 +462,6 @@ Either transport runs a preflight round-trip before training and aborts early if
 the key is missing or the broker isn't up, rather than failing at the first reward
 computation. Skip with `SKIP_VERIFY_PRECHECK=1`.
 
-RL reads `data/rl/{train,test}.parquet` (906 / 101 rollout prompts, with columns
-`prompt`, `images`, `extra_info`, `reward_model`, `data_source`).
-Project-specific integration lives in:
-
-| File | Role |
-|---|---|
-| `verl/verl/experimental/agent_loop/map_gen_agent_loop.py` | multi-turn rollout loop |
-| `verl/verl/tools/map_gen_tools.py` | tool implementations (retrieve / add / delete / move) |
-| `verl/verl/utils/reward_score/map_gen_reward.py` | verifier-backed reward |
-| `verl/verl/utils/dataset/map_gen_dataset.py` | dataset adapter |
-| `verl/verl/trainer/config/ppo_map_gen_trainer.yaml` | trainer config |
-
 ---
 
 ## 7. VibeWorld CLI
