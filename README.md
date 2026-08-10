@@ -204,7 +204,8 @@ export VIBEWORLD_RETRIEVE_SERVER=http://localhost:8081
 ### 3.3 Client & `verl` install
 
 ```bash
-# agent / evaluation client (main.py, eval.py)
+# Please install this environment separately from the PCG/Retrieval environments.
+
 pip install openai google-genai gradio-client httpx requests pillow numpy
 
 # SFT data packing (data/sft_data_process.py)
