@@ -1,8 +1,8 @@
 # VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
 <p align="center">
-  📊 <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
-  🤖 <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
+   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
+   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
