@@ -1,0 +1,18 @@
+# Phase 4 — 4 view 的 query 端 instruction（task description）
+# 用法（对齐 Qwen3-Embedding 官方）：
+#   sentence = f"Instruct: {task}\n{q}"
+# doc 端不加任何 prefix。
+#
+# ★ 分级优先：每条 instruction 内嵌检索优先级，引导模型在 embedding 空间中区分：
+#     1) 实体类型 + 属性约束均匹配（最优，对应 grade 0 正例）
+#     2) 仅实体类型匹配、属性不完全匹配（次优，对应 grade 1 负例）
+#     3) 其他（最远，对应 grade 2/3 负例）
+#   与 loss_grade.py 的 grade-aware margin 信号互补：loss 层用 margin 推开负例，
+#   instruction 层用自然语言告诉模型"什么是最优匹配"。
+
+view_instructions:
+  baseline.query_entity: "根据实体名和原始 query 检索 3D 资产，优先返回实体类型与属性约束均匹配的资产，其次为仅实体类型匹配者"
+  baseline.entity_only:  "根据实体名检索 3D 资产，优先返回实体类型与属性均匹配的资产，其次为仅实体类型匹配者"
+  augment.entity_bound:  "根据实体名检索 3D 资产，优先返回实体类型与属性均匹配的资产，其次为仅实体类型匹配者"
+  augment.alias_bound:   "根据别名检索 3D 资产，优先返回实体类型与属性均匹配的资产，其次为仅实体类型匹配者"
+default_instruction: "根据实体名和可能的原始 query 检索 3D 资产，优先返回实体类型与属性约束均匹配的资产，其次为仅实体类型匹配者"
