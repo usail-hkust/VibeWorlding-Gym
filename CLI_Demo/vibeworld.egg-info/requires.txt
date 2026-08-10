@@ -1,0 +1,9 @@
+rich
+prompt_toolkit
+openai
+google-genai
+gradio-client
+httpx
+trimesh
+numpy
+pillow

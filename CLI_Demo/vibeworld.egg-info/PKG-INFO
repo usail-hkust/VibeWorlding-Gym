@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: vibeworld
+Version: 1.0.0
+Requires-Dist: rich
+Requires-Dist: prompt_toolkit
+Requires-Dist: openai
+Requires-Dist: google-genai
+Requires-Dist: gradio-client
+Requires-Dist: httpx
+Requires-Dist: trimesh
+Requires-Dist: numpy
+Requires-Dist: pillow
+Dynamic: requires-dist
