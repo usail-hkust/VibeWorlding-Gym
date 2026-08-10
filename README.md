@@ -369,7 +369,7 @@ CKPT_HOME=/path/to/output \
 bash run_map_gen_sft.sh
 ```
 
-The resulting checkpoint can then warm-start RL — see the next section.
+The resulting checkpoint can then start checkpoint of RL — see the next section.
 
 ---
 
@@ -377,24 +377,19 @@ The resulting checkpoint can then warm-start RL — see the next section.
 
 ![Reward curves on the validation set and per-query-type (cold-start vs SFT-initialized)](docs/figures/rl_reward.png)
 
-Joint multimodal RL post-training on top of an SFT checkpoint. Each rollout
-issues real `retrieve_assets` / `add` / `delete` / `rotation_and_translation`
-calls against the live services, then the same verifier used for evaluation
-gives the reward. The figure shows the key empirical finding: **cold-starting RL
+Joint multimodal RL post-training on top of an SFT checkpoint. The figure shows the key empirical finding: **cold-starting RL
 from the base model (solid) learns slowly and flattens early, while initializing
 from the SFT checkpoint (dashed) climbs steadily and pulls ahead on every
 split** — most dramatically on the verification set, where the reward more than
-doubles. That is why the pipeline in §5 ends with "warm-start RL from SFT", and
-why the `run_map_gen_grpo*.sh` scripts' default is the base model but the
-recommended override is your SFT output:
+doubles. We recommended override is your SFT output:
 
 ```bash
 HF_MODEL_PATH=./models/ckpt/map_gen_sft/<exp>/global_step_N/actor/huggingface \
 bash run_map_gen_grpo.sh
 ```
 
-Multimodal agentic RL (GRPO) where the reward comes from the same verifier used
-for evaluation, and rollouts call the live retrieval + rendering services. Start
+Multimodal agentic RL where the reward comes from the same verifier used
+for evaluation, and rollouts call the retrieval + rendering services. Start
 both services first. RL throughput is gated by the renderer, so run it with
 several workers per GPU — `WORKERS_PER_GPU=8 bash deploy.sh` (64 workers on an
 8-GPU node); see [`render_in_blender/README.md`](render_in_blender/README.md).
