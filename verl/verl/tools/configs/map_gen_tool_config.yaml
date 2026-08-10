@@ -1,0 +1,190 @@
+# 地图生成任务工具配置
+# 用于verl agent loop的工具定义
+# 注意：verl的tool_registry需要class_name字段
+#
+# generate 任务 4 个工具：retrieve_assets / add / rotation_and_translation / delete
+# refine  任务 3 个工具：add / rotation_and_translation / delete（retrieve_assets 不使用但注册无害）
+
+tools:
+  - class_name: "verl.tools.map_gen_tools.RetrieveAssetsTool"
+    config:
+      type: native
+      # 体系B(5位id)检索服务，与 5位白名单 item_infos.json(2617条) 及 PCG 渲染一致
+      # 优先级(2026-07-03 调整)：env RETRIEVE_SERVER_URL(脚本设置) > 此 yaml 值 > 默认。
+      # 即脚本 run_map_gen_grpo.sh 里的 RETRIEVE_SERVER_URL 优先级最高，会覆盖此处；
+      # 此值仅作 env 未设置时的 fallback。切换地址请优先改脚本。
+      retrieve_url: "http://localhost:8081"
+    tool_schema:
+      type: function
+      function:
+        name: retrieve_assets
+        description: |
+          从 qy 轻游资产库中检索 top-K 候选资产（基于 Qwen3-Embedding-4B，6559 条库）。
+          必填 entity_name（中文实体名，如"高大挺拔的松树"/"中式凉亭"）；
+          可选 top_k（默认5，上限100）、size_class（大/中/小尺寸物体）、scene_limit（室内/沙地/雪地等）。
+          返回 type_id / name / score / native_bbox_m / description / color 等字段，
+          选好 type_id 后通过 add 工具将资产摆入场景。
+        parameters:
+          type: object
+          properties:
+            entity_name:
+              type: string
+              description: 要检索的中文实体名，如"哨塔"/"枯树"/"石火盆"
+            top_k:
+              type: integer
+              description: 返回候选数，默认5，上限100
+            size_class:
+              type: string
+              description: 大尺寸物体/中尺寸物体/小尺寸物体（慎用，易过严导致无结果）
+            scene_limit:
+              type: string
+              description: 室内/沙地/雪地等场景限定（慎用）
+          required:
+            - entity_name
+
+  - class_name: "verl.tools.map_gen_tools.RotationTranslationTool"
+    config:
+      type: native
+    tool_schema:
+      type: function
+      function:
+        name: rotation_and_translation
+        description: |
+          Rotate and translate existing components in the scene.
+          You need to provide the existing component's name, position, and size to match and locate precisely.
+          Then input the new position, new size, and rotation angles.
+        parameters:
+          type: object
+          properties:
+            corrections:
+              type: array
+              items:
+                type: object
+                properties:
+                  original_data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Component name
+                      pos:
+                        type: array
+                        items:
+                          type: number
+                        description: Original position [x, y, z]
+                      Extend:
+                        type: array
+                        items:
+                          type: number
+                        description: Original size [x, y, z]
+                    required: [name, pos, Extend]
+                  modified_data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: Component name
+                      pos:
+                        type: array
+                        items:
+                          type: number
+                        description: New position [x, y, z]
+                      Extend:
+                        type: array
+                        items:
+                          type: number
+                        description: New size [x, y, z]
+                      rotate:
+                        type: array
+                        items:
+                          type: number
+                        description: Rotation angles [rx, ry, rz]
+                      reason:
+                        type: string
+                        description: Reason for the modification
+                    required: [name, pos, Extend]
+                required: [original_data, modified_data]
+          required: [corrections]
+
+  - class_name: "verl.tools.map_gen_tools.DeleteTool"
+    config:
+      type: native
+    tool_schema:
+      type: function
+      function:
+        name: delete
+        description: |
+          Delete unreasonable components from the scene.
+          You need to provide the target component's name, position, and size to match and locate precisely.
+        parameters:
+          type: object
+          properties:
+            modified_data:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Component name to delete
+                  pos:
+                    type: array
+                    items:
+                      type: number
+                    description: Position [x, y, z]
+                  Extend:
+                    type: array
+                    items:
+                      type: number
+                    description: Size [x, y, z]
+                  reason:
+                    type: string
+                    description: Reason for deletion
+                required: [name, pos, Extend]
+          required: [modified_data]
+
+  - class_name: "verl.tools.map_gen_tools.AddTool"
+    config:
+      type: native
+    tool_schema:
+      type: function
+      function:
+        name: add
+        description: |
+          Add new components to the scene.
+          Both name and type_id (asset ID string from retrieve_assets) are required.
+          type_id is used to look up rendering metadata; do NOT fabricate it.
+        parameters:
+          type: object
+          properties:
+            modified_data:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Component name (must match retrieve_assets result)
+                  type_id:
+                    type: string
+                    description: "Asset ID string from retrieve_assets, use exactly as returned (do not pad or truncate). Required."
+                  pos:
+                    type: array
+                    items:
+                      type: number
+                    description: Position [x, y, z] in meters
+                  Extend:
+                    type: array
+                    items:
+                      type: number
+                    description: Size [x, y, z] in meters; use native_bbox_m from retrieve result
+                  rotate:
+                    type: array
+                    items:
+                      type: number
+                    description: Rotation angles [rx, ry, rz] in degrees
+                  reason:
+                    type: string
+                    description: Reason for addition
+                required: [name, type_id, pos, Extend]
+          required: [modified_data]
