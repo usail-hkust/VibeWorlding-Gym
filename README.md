@@ -14,18 +14,19 @@ agent–environment interaction.
 
 ## Watch it build a world
 
-The same agent handles both task families end-to-end: **construction** (build
-a scene from nothing but a text query) and **refinement** (edit an existing
-scene by intent). Both clips are the actual multi-turn tool-call loop, not a
-mockup.
+The vibeworlding agent handles two task families end-to-end: **3D world construction** (build
+a 3D world from scratch) and **3D world refinement** (refine an existing
+3D world). The illustrative examples are here:
 
-**3D World Construction** — build a scene from a text query:
+**3D World Construction** — build
+a 3D world from scratch:
 
 <p align="center">
   <img src="docs/video/construction-demo.gif" alt="3D World Construction demo" width="760">
 </p>
 
-**3D World Refinement** — edit an existing scene by intent:
+**3D World Refinement** — refine an existing
+3D world:
 
 <p align="center">
   <img src="docs/video/refinement-demo.gif" alt="3D World Refinement demo" width="760">
