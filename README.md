@@ -296,18 +296,6 @@ route names are an implementation detail of the verifier. The mapping to the §2
 | `refine-verified` | `refine` + `verifier_type == "verified"` | **3D world refinement** → `Asset-level edit (precise)` only | rule-based against `gt_map`, **no LLM** |
 | `refine-unverified` | `refine` + `verifier_type == "unverified"` | **3D world refinement** → the other 5 types: `Asset-level edit (fuzzy)`, `Scene critique`, `Scene guidance`, `Scene restatement`, `Complex description` | rubric (MLLM judge) |
 
-Note the two easily-confused cases: `Asset-level edit (precise)` is the *only*
-category scored by rule (it has a `gt_map`), while `Asset-level edit (fuzzy)`
-— despite the similar name — is judged by an MLLM like the rest of refinement.
-Each case's `query.json` / `index.json` carries both the paper labels
-(`query_category`, `query_type`) and the routing field (`verifier_type`).
-
-This writes `sft_trajectory_verified.json` per case (reward breakdown + judge
-traces) and prints a summary. Use `--output_file` for a cross-case report.
-
-Baselines are sampled and scored the exact same way — see
-[`baseline/README.md`](baseline/README.md).
-
 ---
 
 ## 5. SFT Training
