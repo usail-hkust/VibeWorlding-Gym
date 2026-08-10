@@ -2,7 +2,8 @@
 
 <p align="center">
    <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
-   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>
+   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>&nbsp;|&nbsp;
+   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlding Paper</a>
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
