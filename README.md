@@ -7,8 +7,8 @@
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
-training vibe worlding agents** — multimodal agents that autonomously infer user
-intent, plan a scene layout, invoke 3D tools (asset retrieval / editing), and
+training vibe worlding agents**: the multimodal agents that autonomously infer user
+intent, plan a scene layout, invoke 3D tools, and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
 agent–environment interaction.
 
