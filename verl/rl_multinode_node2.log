@@ -1,0 +1,119 @@
+nohup: ignoring input
++++ dirname ./run_map_gen_grpo_multinode.sh
+++ cd ./..
+++ pwd
++ VIBEWORLD_ROOT=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym
++++ dirname ./run_map_gen_grpo_multinode.sh
+++ cd .
+++ pwd
++ SCRIPT_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/verl
++ MODEL_HOME=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/models
++ LOCAL_MODEL_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/models
++ export NCCL_IB_HCA=mlx5_bond_1,mlx5_bond_2,mlx5_bond_3,mlx5_bond_4,mlx5_bond_5,mlx5_bond_6,mlx5_bond_7,mlx5_bond_8
++ NCCL_IB_HCA=mlx5_bond_1,mlx5_bond_2,mlx5_bond_3,mlx5_bond_4,mlx5_bond_5,mlx5_bond_6,mlx5_bond_7,mlx5_bond_8
++ export NCCL_COLLNET_ENABLE=0
++ NCCL_COLLNET_ENABLE=0
++ export SHARP_COLL_ENABLE_SAT=0
++ SHARP_COLL_ENABLE_SAT=0
++ export NCCL_NET_GDR_LEVEL=2
++ NCCL_NET_GDR_LEVEL=2
++ export NCCL_IB_QPS_PER_CONNECTION=4
++ NCCL_IB_QPS_PER_CONNECTION=4
++ export NCCL_IB_TC=160
++ NCCL_IB_TC=160
++ export NCCL_PXN_DISABLE=1
++ NCCL_PXN_DISABLE=1
++ export NCCL_ASYNC_ERROR_HANDLING=1
++ NCCL_ASYNC_ERROR_HANDLING=1
++ export TORCH_DIST_INIT_BARRIER_TIMEOUT=7200
++ TORCH_DIST_INIT_BARRIER_TIMEOUT=7200
++ export VERL_CHECKPOINT_TIMEOUT_MINUTES=120
++ VERL_CHECKPOINT_TIMEOUT_MINUTES=120
++ ulimit -n 1048576
+++ ulimit -n
+++ ulimit -Hn
++ echo '[fd-limit] ulimit -n = 1048576 (hard=1048576)'
+[fd-limit] ulimit -n = 1048576 (hard=1048576)
++ export VLLM_USE_MODELSCOPE=0
++ VLLM_USE_MODELSCOPE=0
++ export VLLM_WORKER_MULTIPROC_METHOD=spawn
++ VLLM_WORKER_MULTIPROC_METHOD=spawn
++ export VLLM_ATTENTION_BACKEND=XFORMERS
++ VLLM_ATTENTION_BACKEND=XFORMERS
++ export VLLM_ALLREDUCE_USE_SYMM_MEM=0
++ VLLM_ALLREDUCE_USE_SYMM_MEM=0
++ export CUDA_DEVICE_MAX_CONNECTIONS=1
++ CUDA_DEVICE_MAX_CONNECTIONS=1
++ export WANDB_API_KEY=your_wandb_api_key
++ WANDB_API_KEY=your_wandb_api_key
++ export VIBEWORLD_LLM_TRANSPORT=direct
++ VIBEWORLD_LLM_TRANSPORT=direct
++ export VERIFY_MODEL_TYPE=gemini
++ VERIFY_MODEL_TYPE=gemini
++ export VERIFY_MODEL_NAME=gemini-2.5-flash
++ VERIFY_MODEL_NAME=gemini-2.5-flash
++ export VIBEWORLD_QUERY_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/verifier/query
++ VIBEWORLD_QUERY_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/verifier/query
++ export VIBEWORLD_RPC_TIMEOUT=600
++ VIBEWORLD_RPC_TIMEOUT=600
++ export VIBEWORLD_RPC_POLL_INTERVAL=0.5
++ VIBEWORLD_RPC_POLL_INTERVAL=0.5
++ export RETRIEVE_SERVER_URL=http://localhost:8081
++ RETRIEVE_SERVER_URL=http://localhost:8081
++ export PCG_GRADIO_SERVER=http://localhost:8080
++ PCG_GRADIO_SERVER=http://localhost:8080
++ export RETRIEVE_WHITELIST_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/render_in_blender/assets/item_infos.json
++ RETRIEVE_WHITELIST_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/render_in_blender/assets/item_infos.json
++ TOOL_CONFIG_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/verl/verl/tools/configs/map_gen_tool_config.yaml
++ NODE_RANK=2
++ MASTER_ADDR=29.163.228.154
++ MASTER_PORT=6379
++ NNODES=3
++ GPUS_PER_NODE=8
++ HF_MODEL_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/models/Qwen3-VL-30B-A3B-Thinking
++ HF_MODEL_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/models/Qwen3-VL-30B-A3B-Thinking
++ DATA_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/data/rl
++ train_path=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/data/rl/train.parquet
++ test_path=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/data/rl/test.parquet
++ EXP_NAME=map_gen_grpo_30b_a3b_multinode
++ SAVE_PATH=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/models/map_gen_grpo_30b_a3b_multinode
++ LOG_DIR=/mnt/ceph-AT/private/yansongning/AgenticRL4UGC/ai4ugc_map_gen/VibeWorlding-Gym/log/rl/map_gen_grpo_30b_a3b_multinode
++ REWARD_ALPHA=0.3
++ REWARD_BETA=0.1
++ MAX_TURNS_BY_TYPE=type1:3,type3:5
++ VERIFIED_STRICT_SCOPE=1
++ export VERIFIED_STRICT_SCOPE
++ ENGINE=vllm
++ GEN_TP=8
++ CP=1
++ TP=4
++ PP=1
++ EP=2
++ echo =============================================
+=============================================
++ echo '  多节点 Ray 集群初始化'
+  多节点 Ray 集群初始化
++ echo '  NODE_RANK=2, MASTER_ADDR=29.163.228.154'
+  NODE_RANK=2, MASTER_ADDR=29.163.228.154
++ echo '  NNODES=3, GPUS_PER_NODE=8'
+  NNODES=3, GPUS_PER_NODE=8
++ echo =============================================
+=============================================
++ ray stop --force
+2026-08-07 12:01:37,346	INFO scripts.py:1387 -- Did not find any active Ray processes.
++ sleep 2
++ '[' 2 -eq 0 ']'
++ echo '[Node 2] 加入 Ray 集群 (head=29.163.228.154:6379)...'
+[Node 2] 加入 Ray 集群 (head=29.163.228.154:6379)...
++ sleep 10
+++ nproc
++ ray start --address=29.163.228.154:6379 --num-cpus=384 --num-gpus=8 --disable-usage-stats
+2026-08-07 12:01:50,298	INFO scripts.py:1124 -- [37mLocal node IP[39m: [1m29.163.229.126[22m
+2026-08-07 12:01:52,635	SUCC scripts.py:1140 -- [32m--------------------[39m
+2026-08-07 12:01:52,635	SUCC scripts.py:1141 -- [32mRay runtime started.[39m
+2026-08-07 12:01:52,636	SUCC scripts.py:1142 -- [32m--------------------[39m
+2026-08-07 12:01:52,636	INFO scripts.py:1144 -- To terminate the Ray runtime, run
+2026-08-07 12:01:52,636	INFO scripts.py:1145 -- [1m  ray stop[22m
++ echo '[Node 2] 已加入 Ray 集群，等待 head 节点启动训练...'
+[Node 2] 已加入 Ray 集群，等待 head 节点启动训练...
++ sleep infinity
