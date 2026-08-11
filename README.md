@@ -453,15 +453,6 @@ cd verl
 VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
 ```
 
-Both sides must agree on the query directory (`VIBEWORLD_QUERY_DIR`, default
-`verifier/query`). Tune with `VIBEWORLD_RPC_TIMEOUT` (default 600s) and
-`VIBEWORLD_RPC_POLL_INTERVAL` (0.5s). Test the round-trip standalone with
-`python utils/rpc_test_client.py --backend gemini`.
-
-Either transport runs a preflight round-trip before training and aborts early if
-the key is missing or the broker isn't up, rather than failing at the first reward
-computation. Skip with `SKIP_VERIFY_PRECHECK=1`.
-
 ---
 
 ## 7. VibeWorld CLI
