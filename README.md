@@ -457,6 +457,10 @@ VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
 
 ## 7. VibeWorld CLI
 
+<p align="center">
+  <img src="docs/figure/CLI_demo.png" alt="VibeWolrding CLI demo" width="760">
+</p>
+
 An interactive terminal agent — describe a world and watch it get built, with a
 live browser 3D viewer. See [`CLI_Demo/README.md`](CLI_Demo/README.md).
 
