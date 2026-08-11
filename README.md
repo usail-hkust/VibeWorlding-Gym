@@ -18,15 +18,17 @@ The vibeworlding agent handles two task families end-to-end: **3D world construc
 a 3D world from scratch) and **3D world refinement** (refine an existing
 3D world). The illustrative examples are here:
 
-**3D World Construction** — build
-a 3D world from scratch:
+**3D World Construction** — build a 3D world from scratch:
+
+Example query: Create a simple farm with a barn, crop fields, fences, and a few trees.
 
 <p align="center">
   <img src="docs/video/construction-demo.gif" alt="3D World Construction demo" width="760">
 </p>
 
-**3D World Refinement** — refine an existing
-3D world:
+**3D World Refinement** — refine an existing 3D world:
+
+Example query: Remove the car in the middle of the road and delete the two green buildings.
 
 <p align="center">
   <img src="docs/video/refinement-demo.gif" alt="3D World Refinement demo" width="760">
