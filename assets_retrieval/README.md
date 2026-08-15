@@ -7,7 +7,7 @@ can place real, existing assets instead of hallucinating them.
 
 The service is powered by **VibeWorlder-Embedding-4B**, a single-tower dense
 retriever fine-tuned from Qwen3-Embedding-4B on our asset-card corpus
-(2,616 assets, 2560-dim embeddings).
+(2,616 shipping assets, 2,560-dim embeddings).
 
 ---
 
@@ -46,6 +46,13 @@ Already included in `data/` — no download needed:
 | `standardized_asset_library_with_caption.csv` | 2,622 | Asset attributes for filtering / return fields |
 | `color_shape_detail.csv` | — | Optional color / shape join |
 | `view_prefixes.yaml` | — | View → instruction templates (same as training) |
+
+The two 2,622-row files cover the 2,616 shipping assets of the release library
+plus 6 pre-shipping candidates that were used during retrieval training and are
+retained in the index so that the shipped checkpoint's eval numbers reproduce
+exactly. The extra 6 have no GLB in `render_in_blender/assets/models/clone/`,
+so in practice the agent never places them — retrieval simply ranks them
+alongside the 2,616 real assets.
 
 ## 4. Start the service
 
