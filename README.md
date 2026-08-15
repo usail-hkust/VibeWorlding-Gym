@@ -377,7 +377,7 @@ The resulting checkpoint can then start checkpoint of RL — see the next sectio
 
 ---
 
-## 6. RL Training
+## 6. Joint Multimodal RL Training
 
 ![Reward curves on the validation set and per-query-type (cold-start vs SFT-initialized)](docs/figures/rl_reward.png)
 
