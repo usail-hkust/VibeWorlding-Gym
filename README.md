@@ -41,7 +41,7 @@ Example query: Remove the car in the middle of the road and delete the two green
 ![VibeWorlding framework](docs/figures/framework.png)
 
 The framework has two halves that share the same Blender sandbox. **VWE-Bench**
-(left) is the evaluation suite — 2,617 curated 3D assets, 323 human-annotated
+(left) is the evaluation suite — 2,616 curated 3D assets, 323 human-annotated
 seed worlds, and 6,828 reverse-synthesized queries spanning world *construction*
 and *refinement* — scored by a rubric-based verifier. **VibeWorlding-Gym** (right)
 is the training framework: the same sandbox is exposed to the agent as MCP-style
@@ -59,7 +59,7 @@ The role of every box in the figure maps to a concrete component in this repo:
 |---|---|
 | **Sandbox environment** | Asset retrieval + PCG editing + Blender rendering, exposed to the agent as tools |
 | **Rubric-based verifier** | Physical feasibility (collision, floating, bounds) + intent fulfillment; usable both as an evaluator and as an RL reward service |
-| **VWE-Bench data** | 2,617 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries |
+| **VWE-Bench data** | 2,616 3D assets, 323 human-annotated seed 3D worlds, 6,828 reverse-synthesized multimodal queries |
 | **Training recipes** | SFT and multimodal RL (GRPO) on top of `verl` |
 | **Baselines** | SceneWeaver / SAGE / SceneAssistant reproduced in the same sandbox |
 | **CLI** | An interactive terminal agent for building worlds live |
@@ -86,7 +86,7 @@ VibeWorlding-Gym/
 ├── verl/                    # SFT + RL training
 ├── data/
 │   ├── sft_data_process.py  # sampled log -> packed SFT parquet
-│   ├── sft/                 # 5,460 SFT cases
+│   ├── sft/                 # 5,567 SFT cases (1,129 construction + 4,438 refinement)
 │   ├── test/                # 254 evaluation cases
 │   ├── rl/                  # RL parquet (train/test)
 │   └── seed_3dworld/        # seed 3D worlds (fill from VWE-Bench)
@@ -100,12 +100,12 @@ VibeWorlding-Gym/
 VWE-Bench is what the agent is benchmarked and trained on. It is built from
 three ingredients, all shipped in this repo.
 
-**Assets & seed worlds.** A curated library of **2,617 GLB assets** (furniture,
+**Assets & seed worlds.** A curated library of **2,616 GLB assets** (furniture,
 vegetation, buildings, vehicles, food, … — each with a 5-digit `type_id`,
 display name, scale class, and per-asset orientation correction) and **323
-human-annotated seed 3D worlds** (23–126 placed assets per world, ranging from
-riverside hamlets to dense villa towns). The agent works with the exact same
-geometry as the benchmark.
+human-annotated seed 3D worlds** (8–258 placed assets per world, median 28,
+ranging from riverside hamlets to dense villa towns). The agent works with the
+exact same geometry as the benchmark.
 
 ![Sample assets and seed worlds from VWE-Bench](docs/figures/samples.png)
 
@@ -136,9 +136,11 @@ plus `query_tag` for internal bookkeeping and `verifier_type` (`verified` /
 
 | Split | Location | Contents |
 |---|---|---|
-| Evaluation | `data/test/` | 254 cases (leaderboard) |
-| SFT | `data/sft/` | 5,460 raw cases → pack into parquet (§5) |
-| RL | `data/rl/` | 906 / 101 rollout prompts (`train.parquet` / `test.parquet`) |
+| Evaluation | `data/test/` | 254 cases (46 construction + 208 refinement, leaderboard) |
+| SFT | `data/sft/` | 5,567 cases (1,129 construction + 4,438 refinement) → pack into parquet (§5) |
+| RL | `data/rl/` | 1,007 rollout prompts (189 construction + 818 refinement), shipped as `train.parquet` (906) + `test.parquet` (101) |
+
+The three splits use completely **disjoint seed worlds** (264 SFT / 47 RL / 12 Test seeds, summing to 323), so leaderboard numbers measure generalization rather than seed memorization.
 
 ---
 
@@ -317,7 +319,7 @@ python eval.py --result_dir log/sample_train \
   --model_type gemini --model_name gemini-3.5-flash
 ```
 
-`data/sft` ships 5,460 **raw cases** — one directory per case with `query.json`,
+`data/sft` ships 5,567 **raw cases** — one directory per case with `query.json`,
 `init_map.json`, `component_info.json`, `camera_params.json`,
 `scatter_cache.json`, and the 5-view `image/`. `index.json` maps each case id
 back to its query type.
