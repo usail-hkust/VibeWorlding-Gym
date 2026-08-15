@@ -7,7 +7,7 @@ can place real, existing assets instead of hallucinating them.
 
 The service is powered by **VibeWorlder-Embedding-4B**, a single-tower dense
 retriever fine-tuned from Qwen3-Embedding-4B on our asset-card corpus
-(2,622 assets, 2560-dim embeddings).
+(2,616 assets, 2560-dim embeddings).
 
 ---
 
