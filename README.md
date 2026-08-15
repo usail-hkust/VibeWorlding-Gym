@@ -1,9 +1,9 @@
 # VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
 <p align="center">
-   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">VWE-Bench Dataset</a> &nbsp;|&nbsp;
-   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlder Models</a>&nbsp;|&nbsp;
-   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder">VibeWorlding Paper</a>
+  <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VWE-Bench Dataset</a> &nbsp;|&nbsp;
+  <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VibeWorlder Models</a> &nbsp;|&nbsp;
+  <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
@@ -11,6 +11,10 @@ training vibe worlding agents**: the multimodal agents that autonomously infer u
 intent, plan a scene layout, invoke 3D tools, and
 reflect on multimodal feedback (the 3D map plus rendered images) over multi-turn
 agent–environment interaction.
+
+## News
+
+- **2026-08-16** — We release **VWE-Bench**, **VibeWorlder-Embedding-4B**, **VibeWorlder-8B**, **VibeWorlder-30B-A3B**, and our technical report.
 
 ## Watch it build a world
 
@@ -85,7 +89,6 @@ VibeWorlding-Gym/
 ├── CLI_Demo/                # VibeWorld interactive CLI   (see its README)
 ├── verl/                    # SFT + RL training
 ├── data/
-│   ├── sft_data_process.py  # sampled log -> packed SFT parquet
 │   ├── sft/                 # 5,567 SFT cases (1,129 construction + 4,438 refinement)
 │   ├── test/                # 254 evaluation cases
 │   ├── rl/                  # RL parquet (train/test)
@@ -212,9 +215,6 @@ export VIBEWORLD_RETRIEVE_SERVER=http://localhost:8081
 
 pip install openai google-genai gradio-client httpx requests pillow numpy
 
-# SFT data packing (data/sft_data_process.py)
-pip install pyarrow pillow numpy
-
 # training stack (SFT + RL on verl)
 pip install -r verl/requirements.txt
 ```
@@ -304,60 +304,33 @@ route names are an implementation detail of the verifier. The mapping to the §2
 
 ## 5. SFT Training
 
-SFT is rejection-sampled: you sample trajectories, keep only the ones that pass
-the verifier, and train on those. Three steps.
+SFT is rejection-sampled: we roll out trajectories with a strong teacher, keep
+only the ones that pass the verifier, and train on those. To skip the sampling
+and packing yourself, we release a **ready-to-train parquet example** at
 
-**Step 1 — sample, then score.** Run `main.py` over a training split with a
-strong teacher model, then `eval.py` to score every case. `eval.py` writes
-`sft_trajectory_verified.json` (containing `reward_info`) into each case
-directory — that file is what the packer reads to decide what to keep.
+  → **[huggingface.co/datasets/usail-hkust/VWE-Bench — `data/sft_parquet_example`](https://huggingface.co/datasets/usail-hkust/VWE-Bench/tree/main/data/sft_parquet_example)**
 
-```bash
-python main.py --base_data_dir data/sft --log_dir log/sample_train \
-  --model_type gemini --model_name gemini-3.1-pro --max_turns 8
-python eval.py --result_dir log/sample_train \
-  --model_type gemini --model_name gemini-3.5-flash
-```
-
-`data/sft` ships 5,567 **raw cases** — one directory per case with `query.json`,
-`init_map.json`, `component_info.json`, `camera_params.json`,
-`scatter_cache.json`, and the 5-view `image/`. `index.json` maps each case id
-back to its query type.
-
-**Step 2 — pack into parquet** with
-[`data/sft_data_process.py`](data/sft_data_process.py). This filters by reward,
-aligns the system prompt with the one RL uses (via
-`utils/prompt.py::get_system_prompt`, so SFT and RL never drift apart), flattens
-each trajectory into `messages`, copies the referenced images, and writes
-`train.parquet` / `val.parquet`:
+It has the same three columns the trainer expects — `messages` (the
+turn-by-turn agent transcript with the RL-aligned system prompt from
+`utils/prompt.py::get_system_prompt`), `images` (JPEG bytes downscaled for
+Qwen3-VL), and `tools` (the 4 tool schemas) — with `train.parquet` /
+`val.parquet` already split. Point `DATA_DIR` at it and go:
 
 ```bash
-cd data
-python sft_data_process.py \
-  --log_dir ../log/sample_train \
-  --out_json        sft_packed/sft.json \
-  --out_image_dir   sft_packed/images \
-  --out_parquet_dir sft_packed \
-  --val_ratio 0.05
-```
+huggingface-cli download usail-hkust/VWE-Bench \
+  --repo-type dataset \
+  --include "data/sft_parquet_example/*" \
+  --local-dir ./data/sft_packed_download
+# resulting parquets live under ./data/sft_packed_download/data/sft_parquet_example/
 
-Kept only if the trajectory passed its route: `generate` → `hard_pass`,
-`refine-verified` → `total_reward == 1`, `refine-unverified` → `hard_pass`.
-Add `--skip_reward_filter` to keep everything regardless (useful for smoke
-tests). The result is 3 columns — `messages`, `images` (JPEG bytes, downscaled
-to be Qwen3-VL friendly), and `tools` (the 4 tool schemas).
-
-**Step 3 — train.** Point `DATA_DIR` at the packed directory:
-
-```bash
-cd ../verl
+cd verl
 
 # single node
-DATA_DIR=../data/sft_packed bash run_map_gen_sft.sh
+DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft.sh
 
 # multi node (run on every node, varying NODE_RANK)
 NODE_RANK=0 MASTER_ADDR=<master-node-ip> \
-DATA_DIR=../data/sft_packed bash run_map_gen_sft_multinode.sh
+DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft_multinode.sh
 ```
 
 Everything is overridable by environment variable, so you should not need to edit
@@ -368,16 +341,16 @@ the scripts. `MODEL_ID` defaults to the base model under `MODEL_HOME`
 VIBEWORLD_ROOT=/path/to/VibeWorlding-Gym \
 MODEL_HOME=/path/to/models \
 MODEL_ID=/path/to/Qwen3-VL-8B-Thinking \
-DATA_DIR=/path/to/sft_packed \
+DATA_DIR=/path/to/sft_parquet_example \
 CKPT_HOME=/path/to/output \
 bash run_map_gen_sft.sh
 ```
 
-The resulting checkpoint can then start checkpoint of RL — see the next section.
+The resulting checkpoint then warm-starts RL — see the next section.
 
 ---
 
-## 6. Joint Multimodal RL Training
+## 6. RL Training
 
 ![Reward curves on the validation set and per-query-type (cold-start vs SFT-initialized)](docs/figures/rl_reward.png)
 
