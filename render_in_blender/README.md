@@ -33,7 +33,7 @@ in your environment.
 
 ## 3. The 3D assets
 
-**The GLB assets ship in this repo** at `assets/models/clone/` (2,617 assets,
+**The GLB assets ship in this repo** at `assets/models/clone/` (2,616 assets,
 ~71 GB) — nothing to download. Layout is one directory per 5-digit `type_id`:
 
 ```
