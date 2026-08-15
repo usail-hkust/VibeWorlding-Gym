@@ -376,8 +376,8 @@ several workers per GPU — `WORKERS_PER_GPU=8 bash deploy.sh` (64 workers on an
 
 | `VIBEWORLD_LLM_TRANSPORT` | How it works | When to use |
 |---|---|---|
-| `direct` *(default)* | The training node calls the provider itself | Training node has outbound network |
-| `filerpc` | The training node writes requests to a shared disk; `utils/broker.py` on a networked machine executes them | Training node has **no** network, **or** you want judge calls executed **concurrently** |
+| `direct` | The training node calls the provider itself | Training node has outbound network |
+| `filerpc`  *(default)* | The training node writes requests to a shared disk; `utils/broker.py` on a networked machine executes them | Training node has **no** network, **or** you want judge calls executed **concurrently** |
 
 ### Direct transport
 
