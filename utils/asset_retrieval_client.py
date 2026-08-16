@@ -1,49 +1,4 @@
-"""Asset Retrieval Client — 资产检索服务客户端.
 
-封装 assets_retrieval 服务的 /recommend/single_slot 端点,
-基于 VibeWorlder-Embedding-4B + VWE-Bench 资产库.
-
-服务地址默认读环境变量 VIBEWORLD_RETRIEVE_SERVER（默认 http://localhost:8081）,
-服务部署见 assets_retrieval/README.md。
-
-设计要点:
-- **无 cache**:服务时延 < 1s,在线直连
-- **trust_env=False**:避免读到环境里的 http_proxy 干扰
-- 指数退避重试 3 次 (HTTP 5xx / Network / Timeout)
-- 返回 simplified 列表,不暴露原始 combinations 结构
-
-核心 API:
-    client = AssetRetrievalClient()
-    results = client.retrieve("高大挺拔的松树", top_k=5, theme="中式园林")
-    # results = [
-    #   {"type_id": "20007733", "name": "主题02松树02", "score": 0.34, ...},
-    #   ...
-    # ]
-
-服务返回响应实测结构(/recommend/single_slot):
-    {
-      "per_entity_results": {
-        "<entity_name>": [
-          {
-            "type_id": "20007733",       # 8 位 dream_creator,与 PCG ID 体系同源
-            "name": "主题02松树02",
-            "score": 0.3400,             # cosine ∈ [0, 1]
-            "attributes": {              # 仅当请求 fields 时存在
-              "category_minor": "植被",
-              "type": "树木",
-              "subtype": "乔木",
-              "size_class": "大尺寸物体",
-              "placement": "落地 - 独立落地",
-              "scene_limit": "无限制",
-              "image_uri": "..."
-            }
-          }
-        ]
-      },
-      "combinations": [...],   # 历史兼容,本 client 不暴露
-      "success": true
-    }
-"""
 from __future__ import annotations
 
 import logging
@@ -56,9 +11,6 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-# 默认 fields:平衡 verbosity 和评估需要(供 verifier H5 用 + 看板展示 + agent 视觉选型)
-# 2026-06-02 起服务支持 caption_visual(整段中文视觉描述)+ colors(颜色数组),
-# 用于让 agent 基于视觉/颜色挑选最契合场景主题的资产。
 DEFAULT_FIELDS: List[str] = [
     "category_minor",
     "type",
