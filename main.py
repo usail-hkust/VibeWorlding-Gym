@@ -1,39 +1,3 @@
-"""
-main.py — 3D 世界生成 / 修改的agent 采样主程序
-
-支持根据 task_setting 自动切换：
-  - task_setting == "generate" → 从零搭建场景（retrieve → add → 渲染）
-  - 其他（refine 等）         → 基于初始场景修改（观察 → 调元件 → 渲染）
-
-前置条件：先按 assets_retrieval/README.md 与 render_in_blender/README.md
-把检索服务(默认 8081)与 PCG 渲染服务(默认 8080)跑起来。
-
-用法：
-  # refine 任务
-  python main.py \
-    --base_data_dir data/test \
-    --log_dir log/eval_refine \
-    --model_type gemini \
-    --model_name gemini-2.5-pro \
-    --server http://localhost:8080 \
-    --retrieve_server http://localhost:8081
-
-  # generate 任务
-  python main.py \
-    --base_data_dir data/test \
-    --log_dir log/eval_generate \
-    --model_type gemini \
-    --model_name gemini-2.5-pro \
-    --server http://localhost:8080 \
-    --task_setting generate
-
-  # 自动检测（从 query.json 的 task_setting 字段）
-  python main.py \
-    --base_data_dir data/test \
-    --log_dir log/eval_mix \
-    --model_type gemini \
-    --model_name gemini-2.5-pro
-"""
 
 import os
 import sys
@@ -79,19 +43,11 @@ from prompt import (
     FORMAT_PROMPT_GENERATE_TURN1,
 )
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 常量
-# ══════════════════════════════════════════════════════════════════════════════
-
 GRADIO_SERVER_REFINE   = os.environ.get("VIBEWORLD_RENDER_SERVER", "http://localhost:8080")
 GRADIO_SERVER_GENERATE = os.environ.get("VIBEWORLD_RENDER_SERVER", "http://localhost:8080")
 RETRIEVE_SERVER_DEFAULT = os.environ.get("VIBEWORLD_RETRIEVE_SERVER", "http://localhost:8081")
 
-# PCG item_infos 加载（generate 渲染 & retrieve 白名单用）
-# ⚠️ 必须与检索服务(8081)同一 id 体系(5位新id)。component_info_builder 的
-# DEFAULT_ITEM_INFOS_PATH 是旧的 8位id(6803条 item_infos_dream_creator)，会把检索服务
-# 返回的 5位id 结果在 call_retrieve_for_fc 白名单处全部过滤成空 → 场景空/actors=0。
-# 显式指向 render_in_blender/assets/item_infos.json(2617条5位id，与服务/main_distill.sh 一致)。
+
 _PCG_ITEM_INFOS_PATH = os.environ.get(
     "PCG_ITEM_INFOS",
     os.path.join(_SCRIPT_DIR, "render_in_blender", "assets", "item_infos.json"),
