@@ -1,15 +1,4 @@
-"""
-scene_utils.py — generate (from-scratch) 태스크 전용 유틸리티
 
-제공 기능:
-  call_retrieve_for_fc          — retrieve_assets fc 처리, 검색 결과 반환
-  split_function_calls          — fc 리스트를 retrieve/scene 으로 분류
-  normalize_one_add_item        — add item 필드 정규화 (Gemini 변체 대응)
-  normalize_scene_call_args     — scene call args 정규화
-  apply_scene_calls_to_llm_output — scene_calls 를 llm_output 에 적용
-  format_retrieve_responses_for_user — 검색 결과를 user message 형식으로 포맷
-  enrich_component_info_for_generate — llm_output 의 type_id 로 component_info 보강
-"""
 
 from __future__ import annotations
 
