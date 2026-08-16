@@ -1,48 +1,3 @@
-#!/usr/bin/env python3
-"""qwen_stream_demo.py — qwen3.8-max 流式 reasoning + tool_call demo
-
-独立脚本，不改 utils/llm.py（那里所有 client 都是阻塞式 chat.completions.create）。
-把 VibeWorlding 的场景构建 agent loop 用 **流式** 跑在百炼 qwen3.8-max 上，终端按
-CLI_Demo 的样式实时打印：
-
-    ●
-      ⎿ 🔍 retrieve: 木屋  (top_k=5)
-      ⎿ 🔍 retrieve: 木栅栏  (top_k=5)
-
-    ●
-      ⎿ ➕ add 5: 农舍04, 古井01, 假树01, 干草堆04 …+1 more
-      ⎿ 🖼  rendered · 5 views
-           left  /tmp/.../turn_2/image/debug_cmd_data_result_0.jpg
-           ...
-
-与 CLI_Demo 的差别：reasoning 逐 token 落地（打字机效果），tool_call 在流里
-**一边到达一边打印**，不必等整轮 LLM 返回。
-
-用法
-----
-    export BAILIAN_API_KEY=sk-xxxx          # 或 DASHSCOPE_API_KEY
-    python qwen_stream_demo.py                              # 默认 demo query
-    python qwen_stream_demo.py -q "搭建一个乡村农舍场景"
-    python qwen_stream_demo.py --max-turns 4 --no-render     # 跳过渲染(纯 LLM+检索，快)
-    python qwen_stream_demo.py --raw                         # 顺带打印原始 delta 流
-
-三条外部依赖（都可单独关掉）：
-  * 百炼 qwen3.8-max   —— 必需（--model 可换 qwen3.7-max 等）
-  * 资产检索服务 :8081 —— retrieve_assets 真实检索；挂了则该轮工具返回错误文本
-  * PCG 渲染服务 :8080 —— --no-render 可跳过（不渲染就没有 5 视角图那几行）
-
-踩坑（写这个 demo 时实际踩到的两个）
-------------------------------------
-1. **流式 tool_call 的空首片**：qwen3.8-max 每个 tool_call 的第一个 delta 是
-   (name='retrieve_assets', arguments='')，真参数在后续 delta 才分片到达。若把空
-   arguments 当成「完整的 {}」立刻落地，会打出 `🔍 retrieve: ?` 且该 index 被锁死，
-   参数全丢。必须只在累积串能解析成**非空** JSON 时才判定完成。
-2. **actor 字段名 + 单位**：渲染服务要的是 `pos`(厘米) / `rot`(**四元数**) / `sca`，
-   不是 position/rotation/scale，也不是米。LLM 用米思考，转 actor 时要 ×100
-   （真实管线里由 pcg_render.actors_meter_to_cm 做）。用错会「渲染成功但画面几乎空」——
-   12 个元件全被挤在原点附近只剩 2 个可见。可对照 turn_N/pcg_render.json 排查。
-"""
-
 import argparse
 import json
 import math
@@ -62,7 +17,6 @@ except ImportError:
     httpx = None
 
 
-# ── 颜色/样式：直接用 ANSI，避免拉 rich 依赖 ─────────────────────────────────────
 _TTY = sys.stdout.isatty()
 
 
