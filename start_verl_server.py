@@ -1,20 +1,3 @@
-"""
-启动 vLLM 推理服务（OpenAI 兼容 API）。
-
-直接调用 `vllm serve` 命令，暴露 /v1/chat/completions 接口，
-可被 llm.py 中的 OfflineLLM 直接调用。
-
-用法：
-    python start_verl_server.py \
-        --model_path /path/to/model \
-        --tp_size 4 \
-        --port 8000
-
-然后在另一个终端中：
-    export VERL_SERVER_URL=http://localhost:8000
-    export VERL_MODEL_PATH=/path/to/model
-    python main_2.py ...
-"""
 
 import argparse
 import json
