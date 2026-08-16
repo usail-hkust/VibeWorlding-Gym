@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VWE-Bench Dataset</a> &nbsp;|&nbsp;
   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VibeWorlder Models</a> &nbsp;|&nbsp;
-  <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
+  <a href="https://github.com/usail-hkust/VibeWorlding-Gym/blob/main/VibeWorlding%20Technical%20Report.pdf"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
