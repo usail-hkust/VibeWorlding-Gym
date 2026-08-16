@@ -14,7 +14,7 @@ agent–environment interaction.
 
 ## News
 
-- **2026-08-16** — We release **VWE-Bench**, **VibeWorlder-Embedding-4B**, **VibeWorlder-8B**, **VibeWorlder-30B-A3B**, and our technical report.
+- **2026-08-16** — We release **VWE-Bench**, **VibeWorlder-Embedding-4B**, **VibeWorlder-8B**, **VibeWorlder-30B-A3B**, and our [https://github.com/usail-hkust/VibeWorlding-Gym/blob/main/VibeWorlding%20Technical%20Report.pdf][technical report].
 
 ## Watch it build a world
 
