@@ -1,26 +1,11 @@
 """
-broker.py —— 在有网络的机器上常驻，为训练节点（无外网）代行 LLM 调用。
-
-工作方式：
-  轮询共享磁盘 query 目录里的 <req_id>.req.json，用真实 LLM 客户端执行请求，
-  把结果原子写为 <req_id>.resp.json。训练侧 FileRPCChat 轮询该响应文件取回。
-
-有状态：按 session_id 复用真实客户端实例，从而完整复用 llm.py 各客户端的
-        history 累积 / 工具解析逻辑。空闲 session 超过 TTL 自动清理。
-
-并发：主循环只做扫描 + 分发，用线程池并发处理不同 session 的请求；
-      同一 session 的请求串行（history 有状态，reset/mllm 有顺序依赖），
-      靠 per-session 锁保证。
-
-原子性：所有写入先写 <name>.tmp 再 os.replace 原子重命名，避免 ceph/NFS 下读到半包。
-
-用法（在本机 utils/ 目录下）：
+usage：
     python broker.py                       # 真实模式
     python broker.py --echo                # echo 模式（不接 LLM，仅回显，用于疏通链路）
     python broker.py --query-dir /path     # 覆盖 query 目录
     python broker.py --workers 8           # 线程池大小
 
-前提：本机能访问所选 LLM provider；本机与训练机共享同一 mnt，query 目录路径一致。
+
 """
 
 import os
