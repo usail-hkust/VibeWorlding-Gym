@@ -1,15 +1,4 @@
-"""
-pcg_render.py — PCG 渲染工具函数
 
-提供：
-  compute_camera_params  — 从 actors 列表自动计算 5 视角相机参数
-  gradio_render          — 调用 Gradio 渲染服务，返回 (image_list, error_msg)
-  actors_meter_to_cm     — pos 单位 m → cm（渲染服务要求 cm）
-  llm_output_to_actors   — llm_output (map JSON) → actors 列表
-  normalize_tool_call    — 统一将各种格式的 tool_call 转为 (name, args)
-  fix_flat_args          — 将扁平参数还原为标准嵌套格式
-  fc_to_sft_dict         — function_call → sft_trajectory dict
-"""
 
 import os
 import sys
