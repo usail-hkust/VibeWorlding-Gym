@@ -1,71 +1,76 @@
 #!/bin/bash
 # ============================================================================
-# VibeWorlding-Gym — GRPO 训练（单机 8卡）
+# VibeWorlding-Gym — GRPO training (single node, 8 GPUs)
 #
-# 前置条件：
-#   1. 资产检索服务已启动        -> assets_retrieval/README.md   (默认 :8081)
-#   2. PCG渲染服务已启动        -> render_in_blender/README.md  (默认 :8080)
-#   3. RL 数据在 data/rl/        -> train.parquet / test.parquet
-#   4. 基座或 SFT 权重在 MODEL_HOME 下
+# Prerequisites:
+#   1. Asset retrieval service up  -> assets_retrieval/README.md   (default :8081)
+#   2. PCG rendering service up    -> render_in_blender/README.md  (default :8080)
+#   3. RL data at data/rl/         -> train.parquet / test.parquet
+#   4. Base or SFT weights under MODEL_HOME
 #
-# 用法：
+# Usage:
 #   bash run_map_gen_grpo.sh
-#   HF_MODEL_PATH=/path/to/ckpt bash run_map_gen_grpo.sh      # 从 SFT ckpt 继续
-# 所有配置均可用环境变量覆盖，无需修改本文件。
+#   HF_MODEL_PATH=/path/to/ckpt bash run_map_gen_grpo.sh      # warm-start from an SFT ckpt
+# Every knob is overridable via environment variables; no need to edit this file.
 # ============================================================================
 set -x
 
-# ==================== 仓库根目录 / 模型目录 ====================
-# 本脚本位于 <repo-root>/verl/ 下。
+# ---- Repo root / model home ----
+# This script lives at <repo-root>/verl/.
 VIBEWORLD_ROOT="${VIBEWORLD_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# MODEL_HOME 存放基座 / SFT / RL 权重；LOCAL_MODEL_DIR 为训练期本地快盘（可指向 SSD）。
+# MODEL_HOME holds base / SFT / RL weights; LOCAL_MODEL_DIR is the fast disk used
+# during training (point it at a local SSD if you have one).
 MODEL_HOME="${MODEL_HOME:-${VIBEWORLD_ROOT}/models}"
 LOCAL_MODEL_DIR="${LOCAL_MODEL_DIR:-${MODEL_HOME}}"
 
-# ==================== 环境配置 ====================
+# ---- Runtime env ----
 export VLLM_USE_MODELSCOPE=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export VLLM_ATTENTION_BACKEND=XFORMERS
 export VLLM_ALLREDUCE_USE_SYMM_MEM=0
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-# 注意：不要在此pin CUDA_VISIBLE_DEVICES。Ray 会自动探测本机 GPU 并为每个 actor
-# 单独设置隔离；预先 pin 会与之冲突，导致同一 TP 组的两个 rank 落到同一张物理卡。
+# Do NOT pin CUDA_VISIBLE_DEVICES here. Ray auto-detects the local GPUs and
+# isolates each actor on its own device; pre-pinning conflicts with that and
+# lets two ranks of the same TP group land on the same physical GPU.
 
-# 可选：wandb 上报（未设置则仅 console 日志）
+# Optional: wandb reporting (falls back to console logs if unset)
 export WANDB_API_KEY="${WANDB_API_KEY:-your_wandb_api_key}"
 
-# ==================== Verifier LLM 配置 ====================
-# unverified query 的 reward 由 verifier 调 MLLM 打分；verified query 走规则匹配
-# gt_map，不需要 LLM。两种 transport：
-#   direct （默认）训练节点直连 provider，最简单。
-#   filerpc       训练节点把请求写到共享磁盘，由有网机器上的 utils/broker.py 代行
-#                 调用。适合训练节点无外网，或希望大批 rollout 的 verify 并发打分
-#                 （broker 用线程池并发处理不同 session）。
-#                 用法：先在有网机器上 `bash utils/start_broker.sh`，再启动训练。
-# API key 从环境变量读（direct 在训练节点，filerpc 在 broker 机器）：
+# ---- Verifier LLM ----
+# Rewards for unverified queries come from an MLLM judge; verified queries do
+# rule-based matching against gt_map and need no LLM. Two transports:
+#   direct   (default) training node talks to the provider directly. Simplest.
+#   filerpc  training node writes requests to a shared disk; utils/broker.py on
+#            a networked host executes them. Use when the training node has no
+#            outbound network, OR when you want batched rollouts to be judged
+#            concurrently (broker uses a thread pool across sessions).
+#            Bring up the broker with `bash utils/start_broker.sh` first.
+# API keys are read from the environment (direct: training node; filerpc: broker host):
 #   gemini -> GEMINI_API_KEY | openai -> OPENAI_API_KEY
 #   qwen3 / bailian -> DASHSCOPE_API_KEY
 export VIBEWORLD_LLM_TRANSPORT="${VIBEWORLD_LLM_TRANSPORT:-direct}"
 export VERIFY_MODEL_TYPE="${VERIFY_MODEL_TYPE:-gemini}"
-export VERIFY_MODEL_NAME="${VERIFY_MODEL_NAME:-gemini-2.5-flash}"
+export VERIFY_MODEL_NAME="${VERIFY_MODEL_NAME:-gemini-3.5-flash}"
 
-# filerpc 专用：共享 query 目录（两端必须一致）+ RPC 超时/轮询间隔（秒）
+# filerpc only: shared query dir (must match on both ends) + RPC timeout/poll interval (seconds)
 export VIBEWORLD_QUERY_DIR="${VIBEWORLD_QUERY_DIR:-${VIBEWORLD_ROOT}/verifier/query}"
 export VIBEWORLD_RPC_TIMEOUT="${VIBEWORLD_RPC_TIMEOUT:-600}"
 export VIBEWORLD_RPC_POLL_INTERVAL="${VIBEWORLD_RPC_POLL_INTERVAL:-0.5}"
 
-# ==================== 服务地址 ====================
-# 检索服务与资产白名单必须同一 id 体系（5 位 typeId），否则检索结果会被全部过滤。
+# ---- Service endpoints ----
+# Retrieval service and asset whitelist must share the same 5-digit typeId
+# scheme, otherwise every retrieved asset gets filtered out.
 export RETRIEVE_SERVER_URL="${RETRIEVE_SERVER_URL:-http://localhost:8081}"
 export PCG_GRADIO_SERVER="${PCG_GRADIO_SERVER:-http://localhost:8080}"
 export RETRIEVE_WHITELIST_PATH="${VIBEWORLD_ROOT}/render_in_blender/assets/item_infos.json"
 TOOL_CONFIG_PATH="${SCRIPT_DIR}/verl/tools/configs/map_gen_tool_config.yaml"
 
-# ==================== 模型 / 数据 / 输出路径 ====================
-# 默认从基座直接 RL（cold start）。若已跑过 SFT，把 HF_MODEL_PATH 指向 SFT ckpt。
+# ---- Model / data / output paths ----
+# Defaults to RL from the base model (cold start). To warm-start from SFT,
+# point HF_MODEL_PATH at the SFT ckpt.
 HF_MODEL_PATH=${HF_MODEL_PATH:-"${LOCAL_MODEL_DIR}/Qwen3-VL-8B-Thinking"}
-HF_MODEL_PATH="${HF_MODEL_PATH%/}"    # verl copy_to_local 要求末尾无 /
+HF_MODEL_PATH="${HF_MODEL_PATH%/}"    # verl copy_to_local rejects a trailing slash
 
 DATA_DIR=${DATA_DIR:-"${VIBEWORLD_ROOT}/data/rl"}
 train_path="${DATA_DIR}/train.parquet"
@@ -77,20 +82,24 @@ LOG_DIR=${LOG_DIR:-"${VIBEWORLD_ROOT}/log/rl/${EXP_NAME}"}
 WANDB_LOG_DIR="${LOG_DIR}/wandb_log"
 mkdir -p "${WANDB_LOG_DIR}"
 
-# ==================== Anti-Hacking Reward 配置 ====================
-# 效率折扣系数：verified query 按首次做对的轮次折扣 reward（0=禁用）
+# ---- Anti-hacking reward ----
+# Efficiency discount: verified queries are discounted by the turn at which they
+# first succeed (0 = disabled).
 REWARD_ALPHA=${REWARD_ALPHA:-0.3}
-# 多余轮次惩罚系数：全部做对后继续刷轮的惩罚（0=禁用）
+# Extra-turn penalty: penalty for continuing to spin turns after the task is
+# already solved (0 = disabled).
 REWARD_BETA=${REWARD_BETA:-0.1}
-# 按query_type 动态限制 max_turns，格式 "type1:3,type3:5"（空=禁用）
+# Per-query-type max_turns override, e.g. "type1:3,type3:5" (empty = disabled).
 MAX_TURNS_BY_TYPE=${MAX_TURNS_BY_TYPE:-"type1:3,type3:5"}
-# verified 严格作用域校验：criteria 决定"授权改动集合"，改动越界（多删/误删/多加/
-# 擅移）则 reward 清零，防止"本可精准改一处却大改地图"的 reward hacking。
-# 仅基于 pos 做diff；rotate/Extend 因渲染归一化不可靠，不纳入越界检测。
+# Verified strict-scope check: the criteria define the "authorized edit set";
+# any edit outside it (extra deletes, wrong deletes, extra adds, unauthorized
+# moves) zeros out the reward. Prevents the "could have edited one spot but
+# rewrote the whole map" reward-hacking pattern. Uses pos-only diff; rotate /
+# extend are excluded because render normalization makes them unreliable.
 VERIFIED_STRICT_SCOPE=${VERIFIED_STRICT_SCOPE:-1}
 export VERIFIED_STRICT_SCOPE
 
-# ==================== 并行配置 ====================
+# ---- Parallelism ----
 ENGINE=${1:-vllm}
 GEN_TP=${GEN_TP:-4}
 CP=${CP:-2}
@@ -98,76 +107,79 @@ TP=${TP:-4}
 PP=${PP:-1}
 
 echo "============================================="
-echo "  GRPO 单机训练"
-echo "  模型: ${HF_MODEL_PATH}"
-echo "  数据: ${train_path}"
-echo "  保存: ${SAVE_PATH}"
-echo "  日志: ${LOG_DIR}"
-echo "  服务: retrieve=${RETRIEVE_SERVER_URL}  pcg=${PCG_GRADIO_SERVER}"
+echo "  GRPO single-node training"
+echo "  Model:    ${HF_MODEL_PATH}"
+echo "  Data:     ${train_path}"
+echo "  Save:     ${SAVE_PATH}"
+echo "  Log:      ${LOG_DIR}"
+echo "  Services: retrieve=${RETRIEVE_SERVER_URL}  pcg=${PCG_GRADIO_SERVER}"
 echo "  Verifier: transport=${VIBEWORLD_LLM_TRANSPORT}  ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}"
-echo "  Reward: alpha=${REWARD_ALPHA} beta=${REWARD_BETA} strict_scope=${VERIFIED_STRICT_SCOPE}"
+echo "  Reward:   alpha=${REWARD_ALPHA} beta=${REWARD_BETA} strict_scope=${VERIFIED_STRICT_SCOPE}"
 echo "============================================="
 
 # ============================================================================
-# Verifier 预检：unverified reward 需要真实调用 LLM。若 key 缺失 / broker 未启动，
-# 训练会跑到首次 verify 才失败、白白浪费算力，故先做一次真实往返探活。
-# 设 SKIP_VERIFY_PRECHECK=1 可跳过。
+# Verifier preflight: unverified rewards need a real LLM call. If the API key
+# is missing / broker is down, training would only fail at the first verify
+# call and burn compute until then. Do a real round-trip up front instead.
+# Set SKIP_VERIFY_PRECHECK=1 to skip.
 # ============================================================================
 if [ "${SKIP_VERIFY_PRECHECK:-0}" != "1" ]; then
   VIBE_UTILS_DIR="${VIBEWORLD_ROOT}/utils"
-  echo "[preflight] 探测 verifier LLM (transport=${VIBEWORLD_LLM_TRANSPORT}, ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}) ..."
-  # 预检用短超时，避免 broker 未启动时干等 VIBEWORLD_RPC_TIMEOUT
+  echo "[preflight] probing verifier LLM (transport=${VIBEWORLD_LLM_TRANSPORT}, ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}) ..."
+  # Short timeout for preflight so we don't idle for VIBEWORLD_RPC_TIMEOUT when
+  # the broker is not running.
   VIBEWORLD_RPC_TIMEOUT="${VERIFY_PRECHECK_TIMEOUT:-60}" \
   python3 - "$VIBE_UTILS_DIR" <<'PYEOF'
 import os, sys
 sys.path.insert(0, sys.argv[1])
-from llm import MODEL_TYPE_MAP          # filerpc 时已被重绑为 FileRPCChat 工厂
+from llm import MODEL_TYPE_MAP          # rebound to FileRPCChat factory under filerpc
 mt = os.environ.get("VERIFY_MODEL_TYPE", "gemini")
 mn = os.environ.get("VERIFY_MODEL_NAME", "gemini-2.5-flash")
 if mt not in MODEL_TYPE_MAP:
-    print(f"[preflight] X 未知 VERIFY_MODEL_TYPE={mt!r}，可选：{list(MODEL_TYPE_MAP)}")
+    print(f"[preflight] X unknown VERIFY_MODEL_TYPE={mt!r}, choices: {list(MODEL_TYPE_MAP)}")
     sys.exit(1)
 try:
-    bot = MODEL_TYPE_MAP[mt](model_name=mn, system_instruction="你是简洁助手。")
+    bot = MODEL_TYPE_MAP[mt](model_name=mn, system_instruction="You are a terse assistant.")
     bot.reset()
-    bot.mllm("只回复两个字：正常", [])
+    bot.mllm("Reply with a single word: ok", [])
     content = bot.history[-1].get("content") if bot.history else ""
 except Exception as e:
-    print(f"[preflight] X 调用失败: {type(e).__name__}: {e}")
+    print(f"[preflight] X call failed: {type(e).__name__}: {e}")
     sys.exit(1)
 if content:
-    print(f"[preflight] OK verifier 连通，返回: {content!r}")
+    print(f"[preflight] OK verifier reachable, got: {content!r}")
     sys.exit(0)
-print("[preflight] X verifier 返回空")
+print("[preflight] X verifier returned empty")
 sys.exit(1)
 PYEOF
   if [ $? -ne 0 ]; then
     echo "============================================="
-    echo "X Verifier 预检失败 (transport=${VIBEWORLD_LLM_TRANSPORT})。"
+    echo "X Verifier preflight failed (transport=${VIBEWORLD_LLM_TRANSPORT})."
     if [ "${VIBEWORLD_LLM_TRANSPORT}" = "filerpc" ]; then
-      echo "   1) 确认已在【有网机器】上启动 broker："
+      echo "   1) Make sure the broker is running on a networked host:"
       echo "        cd ${VIBE_UTILS_DIR} && ./start_broker.sh"
-      echo "      查看状态/日志：./start_broker.sh status | ./start_broker.sh log"
-      echo "   2) 确认两端共享同一挂载且 query 目录一致："
+      echo "      Status/logs: ./start_broker.sh status | ./start_broker.sh log"
+      echo "   2) Both ends must share the same mount and query dir:"
       echo "        ${VIBEWORLD_QUERY_DIR}"
-      echo "   3) 确认 broker 机器上已导出对应 API key"
+      echo "   3) Broker host must export the matching API key"
     else
-      echo "   1) VERIFY_MODEL_TYPE / VERIFY_MODEL_NAME 是否有效"
-      echo "      当前：${VERIFY_MODEL_TYPE} / ${VERIFY_MODEL_NAME}"
-      echo "   2) 对应 API key 是否已导出（GEMINI_API_KEY / OPENAI_API_KEY /"
-      echo "      DASHSCOPE_API_KEY），且训练节点能访问该 provider"
-      echo "   3) 训练节点无外网时，改用 broker："
+      echo "   1) Is VERIFY_MODEL_TYPE / VERIFY_MODEL_NAME valid?"
+      echo "      Currently: ${VERIFY_MODEL_TYPE} / ${VERIFY_MODEL_NAME}"
+      echo "   2) Is the matching API key exported (GEMINI_API_KEY / OPENAI_API_KEY /"
+      echo "      DASHSCOPE_API_KEY), and can the training node reach the provider?"
+      echo "   3) If the training node has no network, switch to broker:"
       echo "        VIBEWORLD_LLM_TRANSPORT=filerpc bash $0"
     fi
-    echo "   如需跳过本预检：SKIP_VERIFY_PRECHECK=1 bash $0"
+    echo "   To skip this preflight: SKIP_VERIFY_PRECHECK=1 bash $0"
     echo "============================================="
     exit 1
   fi
 fi
 
 # ============================================================================
-# 外层 while-true：训练若因 node-level OOM 被 kill，自动从最新 ckpt 续跑
-# （配合 trainer.resume_mode=auto）。正常结束（exit 0）时跳出。
+# Outer while-true: if training gets killed by a node-level OOM, auto-resume
+# from the latest ckpt (works together with trainer.resume_mode=auto). Breaks
+# out on a clean exit (exit 0).
 # ============================================================================
 MAX_RETRIES=${MAX_RETRIES:-30}
 RETRY_WAIT=${RETRY_WAIT:-60}
@@ -175,7 +187,7 @@ retry_count=0
 
 while true; do
   echo "============================================="
-  echo "  [$(date)] 启动训练  (重试次数: ${retry_count}/${MAX_RETRIES})"
+  echo "  [$(date)] starting training  (retry ${retry_count}/${MAX_RETRIES})"
   echo "============================================="
 
 HYDRA_FULL_ERROR=1 \
@@ -282,19 +294,19 @@ python3 -m verl.trainer.main_ppo \
     "$@"
 
   EXIT_CODE=$?
-  echo "[$(date)] 训练退出 (exit_code=${EXIT_CODE})"
+  echo "[$(date)] training exited (exit_code=${EXIT_CODE})"
 
   if [ ${EXIT_CODE} -eq 0 ]; then
-    echo "训练正常完成，权重在 ${SAVE_PATH}"
+    echo "Training finished cleanly, weights at ${SAVE_PATH}"
     break
   fi
 
   retry_count=$((retry_count + 1))
   if [ ${retry_count} -ge ${MAX_RETRIES} ]; then
-    echo "已达最大重试次数 ${MAX_RETRIES}，放弃重试"
+    echo "Hit max retries ${MAX_RETRIES}, giving up"
     exit 1
   fi
 
-  echo "训练异常退出，${RETRY_WAIT}s 后从最新 ckpt 续跑 (trainer.resume_mode=auto)..."
+  echo "Abnormal exit, resuming from latest ckpt in ${RETRY_WAIT}s (trainer.resume_mode=auto)..."
   sleep ${RETRY_WAIT}
 done

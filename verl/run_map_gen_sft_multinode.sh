@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 # ============================================================================
-# VibeWorlding-Gym — SFT 训练（多机版，默认 3机×8卡 = 24 GPUs）
+# VibeWorlding-Gym — SFT training (multi-node, default 3 nodes x 8 GPUs = 24 GPUs)
 #
-# 前置条件与单机版一致，另需各节点间 IB 网络互通、共享同一挂载。
-# 默认并行配置针对 30B MoE（Megatron TP=4, EP=2）。
+# Same prerequisites as the single-node script (packed SFT parquet under
+# DATA_DIR), plus IB connectivity across nodes and a shared mount.
+# Default parallelism is tuned for the 30B MoE (Megatron TP=4, EP=2).
 #
-# 用法（每个节点都要执行，仅 NODE_RANK 不同）：
+# Usage (run on every node; only NODE_RANK differs):
 #   NODE_RANK=0 MASTER_ADDR=<master-ip> DATA_DIR=/path/to/sft_parquet bash run_map_gen_sft_multinode.sh
 #   NODE_RANK=1 MASTER_ADDR=<master-ip> DATA_DIR=/path/to/sft_parquet bash run_map_gen_sft_multinode.sh
 #   NODE_RANK=2 MASTER_ADDR=<master-ip> DATA_DIR=/path/to/sft_parquet bash run_map_gen_sft_multinode.sh
 #
-# 所有配置均可用环境变量覆盖，无需修改本文件。
+# Every knob is overridable via environment variables; no need to edit this file.
 # ============================================================================
 set -xeuo pipefail
 
-# ==================== 仓库根目录 / 模型目录 ====================
+# ---- Repo root / model home ----
 VIBEWORLD_ROOT="${VIBEWORLD_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MODEL_HOME="${MODEL_HOME:-${VIBEWORLD_ROOT}/models}"
 LOCAL_MODEL_DIR="${LOCAL_MODEL_DIR:-${MODEL_HOME}}"
 
-# ==================== NCCL / IB 通信 ====================
-# 下面的 HCA 列表按 8 卡 H20 机型给出，请按自己集群的网卡名调整
-# （`ibv_devinfo` 查看；若非 IB 环境可整段注释掉）。
+# ---- NCCL / IB ----
+# HCA list below matches an 8-card H20 host; adjust to your NIC names
+# (`ibv_devinfo`). Comment the whole block out on non-IB clusters.
 export NCCL_IB_HCA="${NCCL_IB_HCA:-mlx5_bond_1,mlx5_bond_5,mlx5_bond_3,mlx5_bond_7,mlx5_bond_4,mlx5_bond_8,mlx5_bond_2,mlx5_bond_6}"
 export NCCL_COLLNET_ENABLE=0
 export SHARP_COLL_ENABLE_SAT=0
@@ -30,25 +31,25 @@ export NCCL_IB_QPS_PER_CONNECTION=4
 export NCCL_IB_TC=160
 export NCCL_PXN_DISABLE=1
 
-# ==================== 环境配置 ====================
+# ---- Runtime env ----
 export PYTHONUNBUFFERED=1
 export NCCL_DEBUG=WARN
 export TOKENIZERS_PARALLELISM=true
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-# 可选：wandb 上报
+# Optional: wandb reporting
 export WANDB_API_KEY="${WANDB_API_KEY:-your_wandb_api_key}"
 
-# ==================== 多节点配置 ====================
+# ---- Multi-node config ----
 NODE_RANK=${NODE_RANK:-0}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 MASTER_PORT=${MASTER_PORT:-29500}
 NNODES=${NNODES:-3}
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 
-# ==================== 模型 / 数据路径 ====================
-# 基座模型（30B MoE）。使用模型原生 chat template，不做任何替换。
+# ---- Model / data paths ----
+# Base 30B MoE. We use the model's native chat template with no substitution.
 MODEL_ID=${MODEL_ID:-"${MODEL_HOME}/Qwen3-VL-30B-A3B-Thinking"}
 
 DATA_DIR=${DATA_DIR:-"${VIBEWORLD_ROOT}/data/sft"}
@@ -56,32 +57,32 @@ TRAIN_FILES="${DATA_DIR}/train.parquet"
 VAL_FILES="${DATA_DIR}/val.parquet"
 
 if [ ! -f "${TRAIN_FILES}" ]; then
-    echo "找不到训练集 ${TRAIN_FILES}"
-    echo "data/sft 下是原始 case 目录，需先打包成 parquet，再用 DATA_DIR 指过来。"
+    echo "Training file not found: ${TRAIN_FILES}"
+    echo "data/sft holds raw case dirs; pack them into parquet first and point DATA_DIR at it."
     exit 1
 fi
 if [ ! -f "${VAL_FILES}" ]; then
     VAL_FILES="null"
-    echo "验证集不存在，跳过验证"
+    echo "Validation set missing; skipping validation."
 fi
 
 ENTRYPOINT=${ENTRYPOINT:-"-m verl.trainer.sft_trainer"}
 
-# ==================== 训练引擎 / 并行配置 (30B MoE) ====================
+# ---- Training engine / parallelism (30B MoE) ----
 backend=${BACKEND:-megatron}
 
-# Megatron 要求 world_size 能被 TP*EP*PP 整除：24 / (4*2*1) = 3 ✓
+# Megatron requires world_size % (TP*EP*PP) == 0: 24 / (4*2*1) = 3.
 TP_SIZE=${TP_SIZE:-4}
 PP_SIZE=${PP_SIZE:-1}
 VPP_SIZE=${VPP_SIZE:-null}
 CP_SIZE=${CP_SIZE:-1}
 EP_SIZE=${EP_SIZE:-2}
-# FSDP 备选（BACKEND=fsdp 时使用）
+# FSDP fallback (BACKEND=fsdp)
 SP_SIZE=${SP_SIZE:-8}
 FSDP_SIZE=${FSDP_SIZE:--1}
 FSDP_STRATEGY=${FSDP_STRATEGY:-"fsdp2"}
 
-# ==================== 训练超参数 ====================
+# ---- Hyperparameters ----
 NUM_TRAINERS=${GPUS_PER_NODE}
 TOTAL_EPOCHS=${TOTAL_EPOCHS:-2}
 LR=${LR:-5e-5}
@@ -91,7 +92,7 @@ MAX_TOKEN_LEN=${MAX_TOKEN_LEN:-122880}
 PAD_MODE=${PAD_MODE:-no_padding}
 USE_REMOVE_PADDING=${USE_REMOVE_PADDING:-True}
 
-# ==================== 检查点配置 ====================
+# ---- Checkpointing ----
 project_name=${PROJECT_NAME:-"map_gen_sft"}
 exp_name=${EXP_NAME:-"map_gen_sft_30b_a3b_multinode"}
 RESUME_MODE=${RESUME_MODE:-auto}
@@ -101,7 +102,7 @@ TEST_FREQ=${TEST_FREQ:--1}
 CKPT_HOME=${CKPT_HOME:-"${MODEL_HOME}/ckpt/${project_name}/${exp_name}"}
 mkdir -p "${CKPT_HOME}"
 
-# ==================== 引擎配置构建 ====================
+# ---- Engine config ----
 FSDP_ENGINE_CONFIG="\
     engine=${backend} \
     optim=${backend} \
@@ -154,17 +155,17 @@ else
     exp_name="${exp_name}-${backend}-tp${TP_SIZE}-pp${PP_SIZE}-ep${EP_SIZE}-cp${CP_SIZE}"
 fi
 
-# ==================== 启动训练 ====================
+# ---- Launch ----
 echo "============================================="
-echo "  SFT 多机训练 (${NNODES}×${GPUS_PER_NODE} GPUs)"
-echo "  模型: ${MODEL_ID}"
-echo "  数据: ${TRAIN_FILES}"
-echo "  节点: ${NNODES} (当前 NODE_RANK=${NODE_RANK})"
-echo "  Master: ${MASTER_ADDR}:${MASTER_PORT}"
-echo "  Epochs: ${TOTAL_EPOCHS}   LR: ${LR}   BS: ${TRAIN_BATCH_SIZE}"
-echo "  Max Length: ${MAX_LENGTH}"
-echo "  并行: TP=${TP_SIZE}, PP=${PP_SIZE}, EP=${EP_SIZE}, CP=${CP_SIZE}"
-echo "  Checkpoint: ${CKPT_HOME}"
+echo "  SFT multi-node training (${NNODES} x ${GPUS_PER_NODE} GPUs)"
+echo "  Model:   ${MODEL_ID}"
+echo "  Data:    ${TRAIN_FILES}"
+echo "  Nodes:   ${NNODES} (current NODE_RANK=${NODE_RANK})"
+echo "  Master:  ${MASTER_ADDR}:${MASTER_PORT}"
+echo "  Epochs:  ${TOTAL_EPOCHS}   LR: ${LR}   BS: ${TRAIN_BATCH_SIZE}"
+echo "  Max len: ${MAX_LENGTH}"
+echo "  Parallel: TP=${TP_SIZE}, PP=${PP_SIZE}, EP=${EP_SIZE}, CP=${CP_SIZE}"
+echo "  Ckpt:    ${CKPT_HOME}"
 echo "============================================="
 
 HYDRA_FULL_ERROR=1 WANDB_MODE=online \
@@ -202,5 +203,5 @@ torchrun \
     checkpoint.save_contents="[model,hf_model,optimizer,extra]" \
     "$@"
 
-echo "SFT 完成，checkpoint 在 ${CKPT_HOME}"
-echo "接着做 RL：HF_MODEL_PATH=${CKPT_HOME}/global_step_N/actor/huggingface bash run_map_gen_grpo_multinode.sh"
+echo "SFT finished, checkpoint at ${CKPT_HOME}"
+echo "Next: HF_MODEL_PATH=${CKPT_HOME}/global_step_N/actor/huggingface bash run_map_gen_grpo_multinode.sh"

@@ -1,29 +1,29 @@
 #!/bin/bash
 # ============================================================================
-# VibeWorlding-Gym — GRPO 训练（多机版，默认 3机×8卡 = 24 GPUs）
+# VibeWorlding-Gym — GRPO training (multi-node, default 3 nodes x 8 GPUs = 24 GPUs)
 #
-# 前置条件与单机版一致（检索服务 :8081 / 渲染服务 :8080 / data/rl 数据），
-# 另需各节点间 IB 网络互通、共享同一挂载。
+# Same prerequisites as the single-node script (retrieval :8081 / renderer
+# :8080 / data/rl), plus IB connectivity across nodes and a shared mount.
 #
-# 用法（每个节点都要执行，仅 NODE_RANK 不同）：
+# Usage (run on every node; only NODE_RANK differs):
 #   NODE_RANK=0 MASTER_ADDR=<head-ip> bash run_map_gen_grpo_multinode.sh
 #   NODE_RANK=1 MASTER_ADDR=<head-ip> bash run_map_gen_grpo_multinode.sh
 #   NODE_RANK=2 MASTER_ADDR=<head-ip> bash run_map_gen_grpo_multinode.sh
 #
-# 默认并行配置针对 30B MoE（TP=4, EP=2）；换模型时调整 TP/EP/GEN_TP。
-# 所有配置均可用环境变量覆盖，无需修改本文件。
+# Default parallelism is tuned for the 30B MoE (TP=4, EP=2); tune TP/EP/GEN_TP
+# for other models. Every knob is overridable via environment variables.
 # ============================================================================
 set -x
 
-# ==================== 仓库根目录 / 模型目录 ====================
+# ---- Repo root / model home ----
 VIBEWORLD_ROOT="${VIBEWORLD_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODEL_HOME="${MODEL_HOME:-${VIBEWORLD_ROOT}/models}"
 LOCAL_MODEL_DIR="${LOCAL_MODEL_DIR:-${MODEL_HOME}}"
 
-# ==================== NCCL / IB 通信 ====================
-# 下面的 HCA 列表按8 卡 H20 机型给出，请按自己集群的网卡名调整
-# （`ibv_devinfo` 查看；若非 IB 环境可整段注释掉）。
+# ---- NCCL / IB ----
+# HCA list below matches an 8-card H20 host; adjust to your NIC names
+# (`ibv_devinfo`). Comment the whole block out on non-IB clusters.
 export NCCL_IB_HCA="${NCCL_IB_HCA:-mlx5_bond_1,mlx5_bond_5,mlx5_bond_3,mlx5_bond_7,mlx5_bond_4,mlx5_bond_8,mlx5_bond_2,mlx5_bond_6}"
 export NCCL_COLLNET_ENABLE=0
 export SHARP_COLL_ENABLE_SAT=0
@@ -35,52 +35,56 @@ export NCCL_ASYNC_ERROR_HANDLING=1
 export TORCH_DIST_INIT_BARRIER_TIMEOUT=7200
 export VERL_CHECKPOINT_TIMEOUT_MINUTES=120
 
-# ==================== 文件描述符上限 ====================
-# 大核数机器上 raylet 会开海量 socket/eventfd，默认 nofile 上限过低时会以
-# `eventfd_select_interrupter: Too many open files` abort（表现为 driver 端
-# "Failed to register worker to Raylet"）。必须在 ray start 之前抬高。
-# 若报 operation not permitted，需在容器启动时加 --ulimit nofile=1048576:1048576。
+# ---- File descriptor limit ----
+# On high-core hosts raylet opens huge numbers of socket/eventfd handles. If
+# the nofile limit is too low, it aborts with
+# `eventfd_select_interrupter: Too many open files` (seen on the driver side as
+# "Failed to register worker to Raylet"). Must be raised before ray start.
+# If this errors with "operation not permitted", start the container with
+# --ulimit nofile=1048576:1048576.
 ulimit -n 1048576 2>/dev/null || ulimit -n "$(ulimit -Hn)" 2>/dev/null || true
 echo "[fd-limit] ulimit -n = $(ulimit -n) (hard=$(ulimit -Hn))"
 
-# ==================== 环境配置 ====================
+# ---- Runtime env ----
 export VLLM_USE_MODELSCOPE=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export VLLM_ATTENTION_BACKEND=XFORMERS
 export VLLM_ALLREDUCE_USE_SYMM_MEM=0
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-# 注意：不要在 ray start 前手动 pin CUDA_VISIBLE_DEVICES，会与 Ray 的 per-actor
-# GPU 隔离冲突，导致 NCCL "Duplicate GPU detected"（同节点多个 rank 抢同一张卡）。
+# Do NOT pin CUDA_VISIBLE_DEVICES before `ray start`. It conflicts with Ray's
+# per-actor GPU isolation and triggers NCCL "Duplicate GPU detected" (two ranks
+# on one node fighting for the same card).
 
-# 可选：wandb 上报
+# Optional: wandb reporting
 export WANDB_API_KEY="${WANDB_API_KEY:-your_wandb_api_key}"
 
-# ==================== Verifier LLM 配置 ====================
-# 说明同单机版 run_map_gen_grpo.sh。多机场景下 filerpc 尤其合适：一次 rollout 会
-# 产生大量 verify 请求，broker 用线程池并发打分。
+# ---- Verifier LLM ----
+# See run_map_gen_grpo.sh for the full explanation. In multi-node runs filerpc
+# is especially useful: one rollout batch produces many verify calls, and the
+# broker judges them concurrently via a thread pool.
 export VIBEWORLD_LLM_TRANSPORT="${VIBEWORLD_LLM_TRANSPORT:-direct}"
 export VERIFY_MODEL_TYPE="${VERIFY_MODEL_TYPE:-gemini}"
-export VERIFY_MODEL_NAME="${VERIFY_MODEL_NAME:-gemini-2.5-flash}"
+export VERIFY_MODEL_NAME="${VERIFY_MODEL_NAME:-gemini-3.5-flash}"
 export VIBEWORLD_QUERY_DIR="${VIBEWORLD_QUERY_DIR:-${VIBEWORLD_ROOT}/verifier/query}"
 export VIBEWORLD_RPC_TIMEOUT="${VIBEWORLD_RPC_TIMEOUT:-600}"
 export VIBEWORLD_RPC_POLL_INTERVAL="${VIBEWORLD_RPC_POLL_INTERVAL:-0.5}"
 
-# ==================== 服务地址 ====================
+# ---- Service endpoints ----
 export RETRIEVE_SERVER_URL="${RETRIEVE_SERVER_URL:-http://localhost:8081}"
 export PCG_GRADIO_SERVER="${PCG_GRADIO_SERVER:-http://localhost:8080}"
 export RETRIEVE_WHITELIST_PATH="${VIBEWORLD_ROOT}/render_in_blender/assets/item_infos.json"
 TOOL_CONFIG_PATH="${SCRIPT_DIR}/verl/tools/configs/map_gen_tool_config.yaml"
 
-# ==================== 多节点配置 ====================
+# ---- Multi-node config ----
 NODE_RANK=${NODE_RANK:-0}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 MASTER_PORT=${MASTER_PORT:-6379}
 NNODES=${NNODES:-3}
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 
-# ==================== 模型 / 数据 / 输出路径 ====================
-# 默认从基座直接 RL（cold start）。若已跑过 SFT，把 HF_MODEL_PATH 指向 SFT ckpt，
-# 例如 ${MODEL_HOME}/ckpt/map_gen_sft/<exp>/global_step_N/actor/huggingface
+# ---- Model / data / output paths ----
+# Defaults to RL from the base model (cold start). To warm-start from SFT,
+# point HF_MODEL_PATH at ${MODEL_HOME}/ckpt/map_gen_sft/<exp>/global_step_N/actor/huggingface
 HF_MODEL_PATH=${HF_MODEL_PATH:-"${MODEL_HOME}/Qwen3-VL-30B-A3B-Thinking"}
 HF_MODEL_PATH="${HF_MODEL_PATH%/}"
 
@@ -92,16 +96,17 @@ EXP_NAME=${EXP_NAME:-"map_gen_grpo_30b_a3b_multinode"}
 SAVE_PATH=${SAVE_PATH:-"${MODEL_HOME}/${EXP_NAME}"}
 LOG_DIR=${LOG_DIR:-"${VIBEWORLD_ROOT}/log/rl/${EXP_NAME}"}
 
-# ==================== Anti-Hacking Reward 配置 ====================
-# 说明同单机版。多机时各 worker 均需继承 VERIFIED_STRICT_SCOPE。
+# ---- Anti-hacking reward ----
+# See run_map_gen_grpo.sh. In multi-node runs every worker inherits
+# VERIFIED_STRICT_SCOPE via export.
 REWARD_ALPHA=${REWARD_ALPHA:-0.3}
 REWARD_BETA=${REWARD_BETA:-0.1}
 MAX_TURNS_BY_TYPE=${MAX_TURNS_BY_TYPE:-"type1:3,type3:5"}
 VERIFIED_STRICT_SCOPE=${VERIFIED_STRICT_SCOPE:-1}
 export VERIFIED_STRICT_SCOPE
 
-# ==================== 并行配置 (30B MoE, 3×8 GPUs) ====================
-# Megatron 要求 world_size 能被 TP*EP*PP 整除：24 / (4*2*1) = 3 ✓
+# ---- Parallelism (30B MoE, 3 x 8 GPUs) ----
+# Megatron requires world_size % (TP*EP*PP) == 0: 24 / (4*2*1) = 3.
 ENGINE=${1:-vllm}
 GEN_TP=${GEN_TP:-8}
 CP=${CP:-1}
@@ -109,9 +114,9 @@ TP=${TP:-4}
 PP=${PP:-1}
 EP=${EP:-2}
 
-# ==================== Ray 集群初始化 ====================
+# ---- Ray cluster bootstrap ----
 echo "============================================="
-echo "  多节点 Ray 集群初始化"
+echo "  Bootstrapping multi-node Ray cluster"
 echo "  NODE_RANK=${NODE_RANK}, MASTER_ADDR=${MASTER_ADDR}"
 echo "  NNODES=${NNODES}, GPUS_PER_NODE=${GPUS_PER_NODE}"
 echo "============================================="
@@ -120,7 +125,7 @@ ray stop --force 2>/dev/null || true
 sleep 2
 
 if [ ${NODE_RANK} -eq 0 ]; then
-    echo "[Node ${NODE_RANK}] 启动 Ray Head (port=${MASTER_PORT})..."
+    echo "[Node ${NODE_RANK}] starting Ray head (port=${MASTER_PORT})..."
     ray start --head \
         --port=${MASTER_PORT} \
         --num-cpus=$(nproc) \
@@ -129,14 +134,14 @@ if [ ${NODE_RANK} -eq 0 ]; then
         --dashboard-port=8265 \
         --disable-usage-stats
 
-    echo "[Node ${NODE_RANK}] 等待 ${NNODES} 个节点全部加入 Ray 集群..."
+    echo "[Node ${NODE_RANK}] waiting for all ${NNODES} nodes to join the Ray cluster..."
     retry_count=0
     max_retries=60
     while [ $retry_count -lt $max_retries ]; do
         connected_nodes=$(ray status 2>/dev/null | grep -c "node_" || echo "0")
-        echo "  已连接节点: ${connected_nodes}/${NNODES} (attempt $((retry_count+1))/${max_retries})"
+        echo "  nodes connected: ${connected_nodes}/${NNODES} (attempt $((retry_count+1))/${max_retries})"
         if [ "$connected_nodes" -ge "$NNODES" ]; then
-            echo "  所有节点已加入 Ray 集群"
+            echo "  all nodes have joined the Ray cluster"
             break
         fi
         retry_count=$((retry_count + 1))
@@ -144,10 +149,10 @@ if [ ${NODE_RANK} -eq 0 ]; then
     done
 
     if [ "$connected_nodes" -lt "$NNODES" ]; then
-        echo "  警告: 仅 ${connected_nodes}/${NNODES} 节点连接，继续启动训练..."
+        echo "  warning: only ${connected_nodes}/${NNODES} nodes connected, starting training anyway..."
     fi
 else
-    echo "[Node ${NODE_RANK}] 加入 Ray 集群 (head=${MASTER_ADDR}:${MASTER_PORT})..."
+    echo "[Node ${NODE_RANK}] joining Ray cluster (head=${MASTER_ADDR}:${MASTER_PORT})..."
     sleep 10
     ray start \
         --address=${MASTER_ADDR}:${MASTER_PORT} \
@@ -155,84 +160,85 @@ else
         --num-gpus=${GPUS_PER_NODE} \
         --disable-usage-stats
 
-    echo "[Node ${NODE_RANK}] 已加入 Ray 集群，等待 head 节点启动训练..."
+    echo "[Node ${NODE_RANK}] joined Ray cluster; waiting for head to launch training..."
     sleep infinity
     exit 0
 fi
 
-# ==================== 以下仅在 Head 节点 (NODE_RANK=0) 执行 ====================
+# ---- Head only (NODE_RANK=0) from here ----
 
 WANDB_LOG_DIR="${LOG_DIR}/wandb_log"
 mkdir -p "${WANDB_LOG_DIR}"
 
 echo "============================================="
-echo "  GRPO 多机训练 (${NNODES}×${GPUS_PER_NODE} GPUs)"
-echo "  模型: ${HF_MODEL_PATH}"
-echo "  数据: ${train_path}"
-echo "  保存: ${SAVE_PATH}"
-echo "  日志: ${LOG_DIR}"
-echo "  并行: TP=${TP}, EP=${EP}, PP=${PP}, CP=${CP}, GEN_TP=${GEN_TP}"
-echo "  服务: retrieve=${RETRIEVE_SERVER_URL}  pcg=${PCG_GRADIO_SERVER}"
+echo "  GRPO multi-node training (${NNODES} x ${GPUS_PER_NODE} GPUs)"
+echo "  Model:    ${HF_MODEL_PATH}"
+echo "  Data:     ${train_path}"
+echo "  Save:     ${SAVE_PATH}"
+echo "  Log:      ${LOG_DIR}"
+echo "  Parallel: TP=${TP}, EP=${EP}, PP=${PP}, CP=${CP}, GEN_TP=${GEN_TP}"
+echo "  Services: retrieve=${RETRIEVE_SERVER_URL}  pcg=${PCG_GRADIO_SERVER}"
 echo "  Verifier: transport=${VIBEWORLD_LLM_TRANSPORT}  ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}"
-echo "  Reward: alpha=${REWARD_ALPHA} beta=${REWARD_BETA} strict_scope=${VERIFIED_STRICT_SCOPE}"
+echo "  Reward:   alpha=${REWARD_ALPHA} beta=${REWARD_BETA} strict_scope=${VERIFIED_STRICT_SCOPE}"
 echo "============================================="
 
 # ============================================================================
-# Verifier 预检：说明同单机版。设 SKIP_VERIFY_PRECHECK=1 可跳过。
+# Verifier preflight: same idea as the single-node script.
+# Set SKIP_VERIFY_PRECHECK=1 to skip.
 # ============================================================================
 if [ "${SKIP_VERIFY_PRECHECK:-0}" != "1" ]; then
   VIBE_UTILS_DIR="${VIBEWORLD_ROOT}/utils"
-  echo "[preflight] 探测 verifier LLM (transport=${VIBEWORLD_LLM_TRANSPORT}, ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}) ..."
+  echo "[preflight] probing verifier LLM (transport=${VIBEWORLD_LLM_TRANSPORT}, ${VERIFY_MODEL_TYPE}/${VERIFY_MODEL_NAME}) ..."
   VIBEWORLD_RPC_TIMEOUT="${VERIFY_PRECHECK_TIMEOUT:-60}" \
   python3 - "$VIBE_UTILS_DIR" <<'PYEOF'
 import os, sys
 sys.path.insert(0, sys.argv[1])
-from llm import MODEL_TYPE_MAP          # filerpc 时已被重绑为 FileRPCChat 工厂
+from llm import MODEL_TYPE_MAP          # rebound to FileRPCChat factory under filerpc
 mt = os.environ.get("VERIFY_MODEL_TYPE", "gemini")
 mn = os.environ.get("VERIFY_MODEL_NAME", "gemini-2.5-flash")
 if mt not in MODEL_TYPE_MAP:
-    print(f"[preflight] X 未知 VERIFY_MODEL_TYPE={mt!r}，可选：{list(MODEL_TYPE_MAP)}")
+    print(f"[preflight] X unknown VERIFY_MODEL_TYPE={mt!r}, choices: {list(MODEL_TYPE_MAP)}")
     sys.exit(1)
 try:
-    bot = MODEL_TYPE_MAP[mt](model_name=mn, system_instruction="你是简洁助手。")
+    bot = MODEL_TYPE_MAP[mt](model_name=mn, system_instruction="You are a terse assistant.")
     bot.reset()
-    bot.mllm("只回复两个字：正常", [])
+    bot.mllm("Reply with a single word: ok", [])
     content = bot.history[-1].get("content") if bot.history else ""
 except Exception as e:
-    print(f"[preflight] X 调用失败: {type(e).__name__}: {e}")
+    print(f"[preflight] X call failed: {type(e).__name__}: {e}")
     sys.exit(1)
 if content:
-    print(f"[preflight] OK verifier 连通，返回: {content!r}")
+    print(f"[preflight] OK verifier reachable, got: {content!r}")
     sys.exit(0)
-print("[preflight] X verifier 返回空")
+print("[preflight] X verifier returned empty")
 sys.exit(1)
 PYEOF
   if [ $? -ne 0 ]; then
     echo "============================================="
-    echo "X Verifier 预检失败 (transport=${VIBEWORLD_LLM_TRANSPORT})。"
+    echo "X Verifier preflight failed (transport=${VIBEWORLD_LLM_TRANSPORT})."
     if [ "${VIBEWORLD_LLM_TRANSPORT}" = "filerpc" ]; then
-      echo "   1) 确认已在【有网机器】上启动 broker："
+      echo "   1) Make sure the broker is running on a networked host:"
       echo "        cd ${VIBE_UTILS_DIR} && ./start_broker.sh"
-      echo "      查看状态/日志：./start_broker.sh status | ./start_broker.sh log"
-      echo "   2) 确认两端共享同一挂载且 query 目录一致："
+      echo "      Status/logs: ./start_broker.sh status | ./start_broker.sh log"
+      echo "   2) Both ends must share the same mount and query dir:"
       echo "        ${VIBEWORLD_QUERY_DIR}"
-      echo "   3) 确认 broker 机器上已导出对应 API key"
+      echo "   3) Broker host must export the matching API key"
     else
-      echo "   1) VERIFY_MODEL_TYPE / VERIFY_MODEL_NAME 是否有效"
-      echo "      当前：${VERIFY_MODEL_TYPE} / ${VERIFY_MODEL_NAME}"
-      echo "   2) 对应 API key 是否已导出（GEMINI_API_KEY / OPENAI_API_KEY /"
-      echo "      DASHSCOPE_API_KEY），且训练节点能访问该 provider"
-      echo "   3) 训练节点无外网时，改用 broker："
+      echo "   1) Is VERIFY_MODEL_TYPE / VERIFY_MODEL_NAME valid?"
+      echo "      Currently: ${VERIFY_MODEL_TYPE} / ${VERIFY_MODEL_NAME}"
+      echo "   2) Is the matching API key exported (GEMINI_API_KEY / OPENAI_API_KEY /"
+      echo "      DASHSCOPE_API_KEY), and can the training node reach the provider?"
+      echo "   3) If the training node has no network, switch to broker:"
       echo "        VIBEWORLD_LLM_TRANSPORT=filerpc bash $0"
     fi
-    echo "   如需跳过本预检：SKIP_VERIFY_PRECHECK=1 bash $0"
+    echo "   To skip this preflight: SKIP_VERIFY_PRECHECK=1 bash $0"
     echo "============================================="
     exit 1
   fi
 fi
 
 # ============================================================================
-# 外层 while-true：训练若因 OOM 被 kill，自动从最新 ckpt 续跑
+# Outer while-true: auto-resume from the latest ckpt if the job gets OOM-killed.
 # ============================================================================
 MAX_RETRIES=${MAX_RETRIES:-30}
 RETRY_WAIT=${RETRY_WAIT:-60}
@@ -240,7 +246,7 @@ retry_count=0
 
 while true; do
   echo "============================================="
-  echo "  [$(date)] 启动训练  (重试次数: ${retry_count}/${MAX_RETRIES})"
+  echo "  [$(date)] starting training  (retry ${retry_count}/${MAX_RETRIES})"
   echo "============================================="
 
 HYDRA_FULL_ERROR=1 \
@@ -352,19 +358,19 @@ python3 -m verl.trainer.main_ppo \
     "$@"
 
   EXIT_CODE=$?
-  echo "[$(date)] 训练退出 (exit_code=${EXIT_CODE})"
+  echo "[$(date)] training exited (exit_code=${EXIT_CODE})"
 
   if [ ${EXIT_CODE} -eq 0 ]; then
-    echo "训练正常完成，权重在 ${SAVE_PATH}"
+    echo "Training finished cleanly, weights at ${SAVE_PATH}"
     break
   fi
 
   retry_count=$((retry_count + 1))
   if [ ${retry_count} -ge ${MAX_RETRIES} ]; then
-    echo "已达最大重试次数 ${MAX_RETRIES}，放弃重试"
+    echo "Hit max retries ${MAX_RETRIES}, giving up"
     exit 1
   fi
 
-  echo "训练异常退出，${RETRY_WAIT}s 后从最新 ckpt 续跑 (trainer.resume_mode=auto)..."
+  echo "Abnormal exit, resuming from latest ckpt in ${RETRY_WAIT}s (trainer.resume_mode=auto)..."
   sleep ${RETRY_WAIT}
 done
