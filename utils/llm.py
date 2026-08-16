@@ -1,34 +1,4 @@
-"""
-llm.py — VibeWorld-Gym 统一 LLM 客户端
 
-所有多模态 LLM 客户端都实现相同接口：
-    __init__(model_name, system_instruction, tools=None)
-    reset()
-    mllm(prompt, image_list) -> (reasoning_text: str, function_calls: list[dict] | None)
-
-可用的客户端类：
-    GeminiMultiChat          — Google Gemini 官方 API（thinking 模式）
-    OpenAIMultiChat          — OpenAI 官方 API
-    QwenMultiChat            — 阿里云百炼 / DashScope（Qwen-VL）
-    OfflineLLM               — 本地 vLLM（OpenAI 兼容），用于我们自己训练的模型
-
-API key 全部从环境变量读取，不在代码中硬编码：
-    GEMINI_API_KEY / OPENAI_API_KEY / DASHSCOPE_API_KEY
-本地 vLLM 服务地址读VERL_SERVER_URL（默认 http://localhost:8000）。
-
-MODEL_TYPE_MAP — 按字符串 key 索引客户端类，供 main.py / verifier 使用：
-    {'gemini': GeminiMultiChat, 'openai': OpenAIMultiChat,
-     'qwen3': QwenMultiChat, 'bailian': BailianMultiChat,
-     'offline-llm': OfflineLLM}
-
-两种 transport（实现见文件末尾的 FileRPC 段）：
-    direct （默认）  本进程直接调 provider。
-    filerpc设 VIBEWORLD_LLM_TRANSPORT=filerpc 后，MODEL_TYPE_MAP 被就地
-                     重绑为 FileRPCChat 工厂，请求经共享磁盘转发给另一台机器上的
-                     broker.py 执行 —— 既解决训练节点无外网，也让大批 verify 任务
-                     能并发打分。REAL_MODEL_TYPE_MAP 始终指向真实类，供 broker 侧
-                     实例化。
-"""
 
 import os
 import json
