@@ -1,17 +1,4 @@
-"""
-地图生成任务专用Agent Loop (v2 — 结构化 tool calling)
 
-集成：
-1. PCG渲染 - 每轮工具调用后自动渲染场景
-2. 地图编辑 - rotation_and_translation, delete, add
-3. Verify评估 - 任务结束时调用LLM-based verifier获取reward
-
-v2 变更：
-- assistant 消息使用结构化字段：content / reasoning_content / tool_calls
-- 与 SFT v2 数据格式、main_2_v2.py 推理格式完全对齐
-- 中间轮: content="" , reasoning_content="思考", tool_calls=[...]
-- 最后轮: content="最终回复", reasoning_content="思考", tool_calls=[]
-"""
 import subprocess
 import signal
 import sys
