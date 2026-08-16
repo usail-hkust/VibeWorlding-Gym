@@ -1,10 +1,5 @@
 """
-render_raw_data_images.py — 批量渲染场景的 5 视角初始图片
-
-对--raw_data_dir 下每个子目录读取 pcg_scene.json，调用 PCG 渲染服务渲染
-front/back/left/right/topdown 五个视角，输出到该子目录的 image/ 下。
-
-用法：
+usage：
     python render_raw_data_images.py \
         --raw_data_dir ./render_in_blender/assets/cmds/ \
         --server http://localhost:8080 \
@@ -19,8 +14,7 @@ import shutil
 import tempfile
 import time
 
-# gradio_client 默认把返回图片缓存到 /tmp，大批量渲染容易打满。
-# 用 GRADIO_TEMP_DIR 指到空间充足的盘上；默认放仓库内的 .gradio_tmp/。
+
 _GRADIO_TMP = os.environ.get(
     "GRADIO_TEMP_DIR",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), ".gradio_tmp"),
