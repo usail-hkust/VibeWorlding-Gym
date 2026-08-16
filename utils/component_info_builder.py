@@ -10,11 +10,10 @@ logger = logging.getLogger(__name__)
 
 _THIS_DIR = Path(__file__).parent
 _VIBE_ASSETS = _THIS_DIR.parent / "render_in_blender" / "assets"
-# 默认指向本仓库的 5位 type_id 资产库（2617 条，与检索服务 / PCG 渲染服务对齐）。
-# main.py 也可通过 load_item_infos(path=...) 或 PCG_ITEM_INFOS 环境变量显式覆盖。
+
 DEFAULT_ITEM_INFOS_PATH = _VIBE_ASSETS / "item_infos.json"
 
-# Module-level cache，避免反复 IO
+
 _ITEM_INFOS_CACHE: Optional[Dict[str, Dict]] = None
 _ITEM_INFOS_CACHE_PATH: Optional[Path] = None
 
