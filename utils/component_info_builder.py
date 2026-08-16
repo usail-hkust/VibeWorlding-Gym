@@ -1,29 +1,4 @@
-"""Generate 任务的 component_info 动态构造工具.
 
-设计思路:
-- refine 任务有静态 component_info（从 component_info.json 加载，闭集）
-- generate 任务下 agent 通过 retrieve_assets 拿到 type_id，通过 add{name, type_id, ...} 摆放
-- 不修改 parse2pcg（保持 refine 100% 兼容），而是在调 parse2pcg 之前
-  enrichment component_info — 把 agent llm_output 里出现的 (name, type_id) 注入进去
-
-依赖文件:
-- item_infos.json（资产全集元数据）
-  优先从调用方显式传入的 path 参数加载（推荐在 main.py 中指定），
-  默认路径：VibeWorlding/render_in_blender/assets/item_infos.json
-
-输出 component_info 条目格式（与 raw_data/.../component_info.json 同 schema）:
-    {
-      "name": "主题02松树02",
-      "typeId": "20007733",
-      "box": [351.28, 347.67, 785.7],   # cm，从 item_infos.BoundingBox.Extend
-      "col": [[0, 0, 0, 255]],
-      "scores": 1.0,
-      "c": 1, "m": 0,
-      "gname": "asset0", "id": 0,
-      "rot": [0.0, 0.0, 0.0, 1.0],      # 默认四元数无旋转
-      "size_range": []
-    }
-"""
 from __future__ import annotations
 
 import json
