@@ -43,7 +43,7 @@ export VIBEWORLD_RENDER_SERVER=http://localhost:8080
 python baseline/sceneweaver.py \
   --base_data_dir data/test \
   --log_dir log/baseline_sceneweaver \
-  --model_type gemini --model_name gemini-2.5-pro \
+  --model_type gemini --model_name xx \
   --server http://localhost:8080 \
   --retrieve_server http://localhost:8081
 
@@ -62,5 +62,5 @@ Baseline runs are evaluated exactly like our own model:
 
 ```bash
 python eval.py --result_dir log/baseline_sceneweaver \
-  --model_type gemini --model_name gemini-2.5-flash
+  --model_type gemini --model_name gemini-3.5-flash
 ```
