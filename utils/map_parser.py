@@ -1,12 +1,4 @@
-"""map_parser.py — 把 agent 输出的 3D 世界 map 解析成 PCG actors。
 
-`parse2pcg()` 是渲染链路的入口：它把 LLM 产出的中文结构化 3D map
-（自然元件 / 建筑元件 …）连同 component_info 展开成 PCG 引擎需要的 actor列表，
-再由 utils/pcg_render.py 交给 Blender 渲染服务出图。
-
-散布类元件（成片的树/花/草等）会按规则程序化生成实例位置，并用 scatter_cache
-保证同一场景多轮渲染之间的布局稳定（否则每轮抖动，agent 无法判断自己的修改效果）。
-"""
 
 import json
 import logging
