@@ -1,23 +1,5 @@
 #!/usr/bin/env python3
-"""eval.py — 三路径统一验证器(2026-07-02)
-
-输入一个蒸馏/RL 输出的 log 目录,遍历每个 case,读 query.json 的
-(task_setting, verifier_type) 自动分派到对应 verifier:
-
-| 路径 | 判定 | verifier |
-|------|------|----------|
-| generate           | task_setting=="generate"                             | evaluate_onestep_scene_case (H1~H5) |
-| refine-unverified  | task_setting=="refine" & verifier_type=="unverified" | evaluate_unverified_case_v2 (H1~H4, hard-only) |
-| refine-verified    | task_setting=="refine" & verifier_type=="verified"   | evaluate_verified_case (规则,无需 LLM) |
-
-★ 每个 case 目录下生成 {case}/sft_trajectory_verified.json：
-  - 基底 = 该 case 的 sft_trajectory.json（agent 原始 trajectory）
-  - reward_info：各维度 verify 结果 + total_reward
-  - reward_instruction：每次 verify LLM 调用的 system_instruction + 输入(user+图) + 输出(assistant)
-  （verified 走规则匹配无 LLM 调用，reward_instruction 为空）
-
-可选 --output_file 额外写一份跨 case 汇总 report。
-
+"""
 Usage:
   python eval.py \
     --result_dir log/20260702_mix \
@@ -37,7 +19,7 @@ for _p in (SCRIPT_DIR, _UTILS_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-# 三路径 verifier 入口
+
 from unverified_verifier_onestep_scene import evaluate_onestep_scene_case  # generate
 from unverified_verifier import evaluate_unverified_case_v2                # refine-unverified
 from verified_verifier import evaluate_verified_case                       # refine-verified
