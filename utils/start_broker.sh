@@ -15,11 +15,7 @@
 
 set -u
 
-# 抬高文件描述符上限：broker 在高并发下会积累大量 fd（HTTP keepalive
-# socket + per-session 客户端对象 + 轮询 query 目录），默认 soft limit 1024 远
-# 不够用，会抛 `OSError: [Errno 24] Too many open files` 无法写 .resp.json →
-# 训练侧 FileRPCChat 轮询不到响应 → verify 超时 → verifier_call_success=0。
-# 训练脚本已对自身 ulimit -n 1048576，但 broker 由独立 shell 启动，需在此单独抬高。
+
 ulimit -n 1048576 2>/dev/null || ulimit -n "$(ulimit -Hn)" 2>/dev/null || true
 echo "[start_broker] ulimit -n = $(ulimit -n) (hard=$(ulimit -Hn))"
 
