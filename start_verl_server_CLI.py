@@ -1,32 +1,3 @@
-"""
-start_verl_server_CLI.py — 为 vibeworld CLI_Demo 启动本地 vLLM 推理服务
-
-模型：Qwen3-VL-MoE 30B-A3B（SFT 微调版 VibeWorlder）
-默认端口：8080（CLI_Demo 里配置的 LOCAL_VLLM_SERVER 指向这里）
-
-用法（在 GPU 服务器上）：
-    python start_verl_server_CLI.py                   # 全用默认值
-    python start_verl_server_CLI.py --tp_size 8       # 8 卡并行
-    python start_verl_server_CLI.py --port 9090       # 换端口
-
-服务就绪后，在 CLI_Demo/setup.py 里把 LOCAL_VLLM_SERVER 设为：
-    http://<server-ip>:8080/v1   （对应默认端口 8080）
-
-关键 vLLM 参数说明：
-  --enable-auto-tool-choice + --tool-call-parser qwen25
-      Qwen3 系列的 native function calling，vLLM 自动解析 JSON tool_call。
-  --reasoning-parser deepseek_r1
-      把模型输出的 <think>…</think> 段解析进 reasoning_content 字段，
-      供 streaming_bailian.py 的 _consume() 读取并实时打印。
-  --limit-mm-per-prompt '{"image": 5}'
-      每轮最多 5 张图（vibeworld 5 视角渲染图），超出则截断而非报错。
-  --served-model-name vibeworlder-30B-A3B
-      API 调用时用这个短名字（LocalStreamingVLLMMultiChat 里也是这个名字）。
-
-GPU 需求（估算）：
-  30B MoE 参数 bf16 ≈ 60GB；4×80GB GPU 跑 --gpu-memory-utilization 0.85 足够。
-  如果 VRAM 紧张可以加 --enforce_eager 关掉 CUDAGraph。
-"""
 
 import argparse
 import json
@@ -34,9 +5,7 @@ import os
 import subprocess
 import sys
 
-# 我们训练的 VibeWorlder 模型目录。下载：
-#   https://huggingface.co/collections/usail-hkust/vibeworlder
-# 可用 --model_path 或 VIBEWORLD_MODEL_PATH 覆盖。
+
 MODEL_PATH = os.environ.get("VIBEWORLD_MODEL_PATH", "./models/VibeWorlder-30B-A3B")
 
 SERVED_MODEL_NAME = "vibeworlder-30B-A3B"
