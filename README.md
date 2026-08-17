@@ -1,4 +1,4 @@
-# <img src="docs/figures/ours.png" height="24" style="vertical-align:middle"> VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
+# <img src="docs/figures/ours.png" height="30" style="vertical-align:middle"> VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
 <p align="center">
   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VWE-Bench Dataset</a> &nbsp;|&nbsp;
