@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VWE-Bench Dataset</a> &nbsp;|&nbsp;
   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VibeWorlder Models</a> &nbsp;|&nbsp;
-  <a href="https://github.com/usail-hkust/VibeWorlding-Gym/blob/main/VibeWorlding%20Technical%20Report.pdf"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
+  <a href="https://arxiv.org/pdf/2608.15265"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
 </p>
 
 VibeWorlding is a unified open-source framework for **benchmarking and
@@ -14,7 +14,7 @@ agent–environment interaction.
 
 ## News
 
-- **2026-08-16** — We release **VWE-Bench**, **VibeWorlder-Embedding-4B**, **VibeWorlder-8B**, **VibeWorlder-30B-A3B**, and our [technical report](https://github.com/usail-hkust/VibeWorlding-Gym/blob/main/VibeWorlding%20Technical%20Report.pdf).
+- **2026-08-16** — We release **VWE-Bench**, **VibeWorlder-Embedding-4B**, **VibeWorlder-8B**, **VibeWorlder-30B-A3B**, and our [technical report](https://arxiv.org/pdf/2608.15265).
 
 ## Watch it build a world
 
