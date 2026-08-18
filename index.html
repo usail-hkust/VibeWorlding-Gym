@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?</title>
+<meta name="description" content="VibeWorlding is a unified framework for benchmarking and training vibe worlding agents: multimodal agents that infer user intent, plan a scene layout, invoke 3D tools, and reflect on multimodal feedback over multi-turn interaction.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12141c; --ink-2:#3b4252; --ink-3:#6b7280; --line:#e5e7eb; --line-2:#eef0f3;
+  --bg:#ffffff; --bg-2:#f7f8fa; --bg-3:#fbfcfd;
+  --brand:#2f5fe0; --brand-2:#5b8def; --brand-ink:#1c3f9e;
+  --accent:#0d9488; --warn:#d97706;
+  --max:1180px; --r:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.18);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:70px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",system-ui,sans-serif;
+  font-size:16.5px; line-height:1.68; -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%; display:block; border:0}
+a{color:var(--brand); text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em}
+.wrap{max-width:var(--max); margin:0 auto; padding:0 24px}
+.narrow{max-width:860px; margin:0 auto}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky; top:0; z-index:60; background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(180%) blur(12px); border-bottom:1px solid var(--line);
+}
+nav .wrap{display:flex; align-items:center; gap:26px; height:56px}
+.brand{font-weight:800; letter-spacing:-.02em; font-size:16px; color:var(--ink); white-space:nowrap}
+.brand span{color:var(--brand)}
+.navlinks{display:flex; gap:20px; margin-left:auto; overflow-x:auto; scrollbar-width:none}
+.navlinks::-webkit-scrollbar{display:none}
+.navlinks a{color:var(--ink-2); font-size:14px; font-weight:500; white-space:nowrap}
+.navlinks a:hover{color:var(--brand); text-decoration:none}
+
+/* ---------- hero ---------- */
+header{
+  padding:64px 0 40px; text-align:center;
+  background:
+    radial-gradient(900px 380px at 50% -140px, #eaf0ff 0%, rgba(234,240,255,0) 70%),
+    linear-gradient(180deg,#fcfdff 0%,#ffffff 100%);
+  border-bottom:1px solid var(--line-2);
+}
+h1{
+  margin:0 auto 6px; max-width:940px; font-size:clamp(29px,4.4vw,49px);
+  line-height:1.14; letter-spacing:-.032em; font-weight:800;
+}
+h1 .q{display:block; font-size:.66em; font-weight:700; color:var(--ink-2); margin-top:.34em; letter-spacing:-.02em}
+.venue{
+  display:inline-block; margin:16px 0 0; padding:4px 13px; border-radius:999px;
+  background:#eef3ff; color:var(--brand-ink); font-size:12.5px; font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; border:1px solid #dbe5ff;
+}
+.authors{margin:22px auto 0; max-width:780px; font-size:16px; color:var(--ink-2); line-height:2}
+.authors b{font-weight:600; color:var(--ink)}
+.authors sup{color:var(--brand); font-weight:700; font-size:.76em; padding-left:1px}
+.affil{margin:12px auto 0; max-width:760px; font-size:14.5px; color:var(--ink-3)}
+.affil .m{display:inline-block; margin:0 9px}
+.affil sup{color:var(--brand); font-weight:700}
+.note{margin:9px auto 0; font-size:13px; color:var(--ink-3); font-style:italic}
+
+.btns{display:flex; justify-content:center; gap:11px; flex-wrap:wrap; margin:30px 0 0}
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:10px 19px; border-radius:999px;
+  background:#171a23; color:#fff; font-size:14.5px; font-weight:600; border:1px solid #171a23;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+.btn:hover{text-decoration:none; transform:translateY(-1px); background:#20242f; box-shadow:0 6px 18px -8px rgba(0,0,0,.4)}
+.btn.alt{background:#fff; color:var(--ink); border-color:#d6dae2}
+.btn.alt:hover{background:var(--bg-2); border-color:#c3c9d4}
+.btn .ic{width:17px; height:17px; flex:none}
+
+/* ---------- teaser ---------- */
+.teaser{margin:40px auto 0; max-width:1080px; padding:0 24px}
+.teaser figure{margin:0; background:#fff; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow)}
+figcaption{padding:12px 18px; font-size:13.6px; color:var(--ink-3); background:var(--bg-3); border-top:1px solid var(--line-2); text-align:left}
+figcaption b{color:var(--ink-2); font-weight:600}
+
+/* ---------- sections ---------- */
+section{padding:62px 0; border-bottom:1px solid var(--line-2)}
+section.tint{background:var(--bg-2)}
+h2{
+  margin:0 0 8px; font-size:clamp(23px,2.5vw,31px); letter-spacing:-.024em;
+  font-weight:800; text-align:center;
+}
+.sub{margin:0 auto 34px; max-width:720px; text-align:center; color:var(--ink-3); font-size:15.5px}
+h3{margin:34px 0 12px; font-size:19px; letter-spacing:-.015em; font-weight:700}
+p{margin:0 0 15px}
+.abstract{font-size:17px; color:var(--ink-2)}
+.abstract b{color:var(--ink); font-weight:650}
+.u{border-bottom:2px solid #ffd88a; padding-bottom:1px; font-weight:600; color:var(--ink)}
+
+/* ---------- stat strip ---------- */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:34px 0 0}
+.stat{
+  background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 14px; text-align:center;
+  box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
+.stat .n{font-size:27px; font-weight:800; letter-spacing:-.03em; color:var(--brand-ink); line-height:1.1}
+.stat .l{margin-top:5px; font-size:12.6px; color:var(--ink-3); font-weight:500}
+
+/* ---------- gallery ---------- */
+.toolbar{
+  display:flex; gap:9px; align-items:center; flex-wrap:wrap; justify-content:center; margin:0 0 22px;
+}
+.chip{
+  padding:6.5px 15px; border-radius:999px; border:1px solid #d6dae2; background:#fff;
+  font-size:13.4px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:all .12s ease;
+  font-family:inherit;
+}
+.chip:hover{border-color:var(--brand-2); color:var(--brand-ink)}
+.chip.on{background:var(--brand); border-color:var(--brand); color:#fff}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(292px,1fr)); gap:16px}
+.card{
+  background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  box-shadow:0 1px 2px rgba(16,24,40,.04); transition:transform .14s ease, box-shadow .14s ease;
+}
+.card:hover{transform:translateY(-2px); box-shadow:var(--shadow)}
+.card .ph{position:relative; background:#eceff3; aspect-ratio:16/9}
+.card .ph img{width:100%; height:100%; object-fit:cover}
+.card .fam{
+  position:absolute; left:9px; top:9px; padding:3px 9px; border-radius:999px;
+  background:rgba(12,16,26,.72); color:#fff; font-size:11.2px; font-weight:650; letter-spacing:.01em;
+  backdrop-filter:blur(4px);
+}
+.card .cnt{
+  position:absolute; right:9px; top:9px; padding:3px 9px; border-radius:999px;
+  background:rgba(255,255,255,.9); color:var(--ink); font-size:11.2px; font-weight:700;
+}
+.card .bd{padding:11px 13px 13px}
+.card .ti{font-size:14.8px; font-weight:700; letter-spacing:-.012em; margin:0 0 5px}
+.card .mt{display:flex; gap:6px; flex-wrap:wrap}
+.tag{
+  font-size:11.2px; padding:2px 8px; border-radius:5px; background:var(--bg-2);
+  color:var(--ink-3); border:1px solid var(--line-2); font-weight:500;
+}
+.tag.t{background:#f0f7f5; color:#0f766e; border-color:#d6ece7}
+.tag.g{background:#f6f4ff; color:#5b4bc4; border-color:#e6e1fb}
+.tag.s{background:#fff8ee; color:#b45309; border-color:#f7e6c9}
+
+/* ---------- 3d viewers ---------- */
+model-viewer{
+  width:100%; height:100%; display:block; background:transparent;
+  --poster-color:transparent; outline:none;
+}
+.w3d{display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:34px 0 0}
+@media(max-width:760px){ .w3d{grid-template-columns:1fr} }
+.w3d .v{
+  background:linear-gradient(180deg,#f4f7fb 0%,#e9edf4 100%);
+  border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
+.w3d .stage{position:relative; aspect-ratio:16/10}
+.w3d .bd{padding:11px 14px 13px; background:#fff; border-top:1px solid var(--line-2)}
+.w3d .ti{font-size:15px; font-weight:700; letter-spacing:-.012em; margin:0 0 5px}
+.a3grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(186px,1fr)); gap:14px}
+.a3grid .v{
+  background:linear-gradient(180deg,#fcfdff 0%,#f2f5f9 100%);
+  border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  box-shadow:0 1px 2px rgba(16,24,40,.04); transition:transform .14s ease, box-shadow .14s ease;
+}
+.a3grid .v:hover{transform:translateY(-2px); box-shadow:var(--shadow)}
+.a3grid .stage{position:relative; aspect-ratio:1}
+.a3grid .bd{padding:9px 11px 11px; background:#fff; border-top:1px solid var(--line-2)}
+.a3grid .ti{font-size:13.4px; font-weight:700; letter-spacing:-.01em; margin:0 0 4px; line-height:1.35}
+.a3grid .mt{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
+/* click-to-load poster */
+.stage .poster{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; pointer-events:none}
+.stage .load{
+  position:absolute; inset:0; display:flex; flex-direction:column; gap:7px;
+  align-items:center; justify-content:center; cursor:pointer; border:0; width:100%;
+  background:transparent; font-family:inherit; color:var(--ink-2); transition:background .12s ease;
+}
+.stage .load:hover{background:rgba(47,95,224,.06)}
+.stage .load .ico{
+  width:42px; height:42px; border-radius:50%; background:#fff; border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);
+  font-size:19px; color:var(--brand);
+}
+.stage .load .tx{font-size:12.6px; font-weight:600}
+.stage .load .sz{font-size:11.2px; color:var(--ink-3)}
+.stage .spin{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:12.4px; color:var(--ink-3); pointer-events:none;
+}
+.badge3d{
+  position:absolute; left:9px; top:9px; z-index:2; padding:3px 9px; border-radius:999px;
+  background:rgba(255,255,255,.9); color:var(--ink-2); font-size:11px; font-weight:700;
+  border:1px solid var(--line); pointer-events:none;
+}
+.hint3d{margin:16px 0 0; text-align:center; font-size:13.2px; color:var(--ink-3)}
+
+/* ---------- views ---------- */
+.vwrap{background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:0 0 18px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.vhd{padding:12px 16px; border-bottom:1px solid var(--line-2); display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; background:var(--bg-3)}
+.vhd .t{font-weight:700; font-size:15.5px; letter-spacing:-.012em}
+.vhd .s{font-size:13px; color:var(--ink-3)}
+.vrow{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line-2)}
+.vcell{background:#eceff3; position:relative; aspect-ratio:16/9}
+.vcell img{width:100%; height:100%; object-fit:cover}
+.vcell .lb{
+  position:absolute; left:6px; bottom:6px; padding:2px 7px; border-radius:4px;
+  background:rgba(12,16,26,.7); color:#fff; font-size:10.6px; font-weight:650; letter-spacing:.03em;
+}
+@media(max-width:760px){ .vrow{grid-template-columns:repeat(2,1fr)} }
+
+/* ---------- assets ---------- */
+.abar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin:0 0 20px}
+.abar input,.abar select{
+  font-family:inherit; font-size:13.8px; padding:8px 12px; border:1px solid #d6dae2;
+  border-radius:9px; background:#fff; color:var(--ink); outline:none;
+}
+.abar input{width:216px}
+.abar input:focus,.abar select:focus{border-color:var(--brand-2); box-shadow:0 0 0 3px rgba(91,141,239,.14)}
+.abar .ct{font-size:13.2px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.agrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:11px}
+.acell{
+  background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center;
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.acell:hover{transform:translateY(-2px); border-color:var(--brand-2); box-shadow:var(--shadow)}
+.acell img{width:100%; aspect-ratio:1; object-fit:contain; background:var(--bg-3); border-radius:7px}
+.acell .an{font-size:11.6px; font-weight:600; margin-top:6px; line-height:1.35; height:2.7em; overflow:hidden; letter-spacing:-.005em}
+.acell .ai{font-size:10.4px; color:var(--ink-3); margin-top:3px; font-family:"JetBrains Mono",monospace}
+.empty{text-align:center; color:var(--ink-3); padding:44px 0; font-size:14.5px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; margin:20px 0 0; border:1px solid var(--line); border-radius:12px; background:#fff}
+table{width:100%; border-collapse:collapse; font-size:14.6px}
+th,td{padding:10px 15px; text-align:left; border-bottom:1px solid var(--line-2)}
+th{background:var(--bg-3); font-weight:700; font-size:13px; color:var(--ink-2); letter-spacing:.02em; text-transform:uppercase; white-space:nowrap}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#fafbfd}
+tr.tot td{font-weight:750; background:var(--bg-2)}
+tr.fam td:first-child{font-weight:700; color:var(--brand-ink)}
+
+/* ---------- figure blocks ---------- */
+.fig{margin:26px 0 0; background:#fff; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.fig.pad{padding:16px 16px 0}
+.fig.pad figcaption{margin:14px -16px 0}
+
+/* ---------- pipeline ---------- */
+.flow{display:grid; grid-template-columns:repeat(auto-fit,minmax(214px,1fr)); gap:14px; margin:26px 0 0}
+.step{background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; position:relative; box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.step .k{
+  width:27px; height:27px; border-radius:8px; background:var(--brand); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:13.5px; font-weight:750; margin-bottom:11px;
+}
+.step h4{margin:0 0 6px; font-size:15.2px; font-weight:700; letter-spacing:-.012em}
+.step p{margin:0; font-size:13.8px; color:var(--ink-3); line-height:1.6}
+.step code{background:var(--bg-2); padding:1px 5px; border-radius:4px; font-size:12.4px; color:var(--brand-ink)}
+
+/* ---------- bibtex ---------- */
+pre{
+  margin:0; background:#12141c; color:#dfe4ee; border-radius:12px; padding:20px 22px;
+  overflow-x:auto; font-family:"JetBrains Mono",monospace; font-size:13.3px; line-height:1.72;
+}
+pre .k{color:#8fb4ff} pre .v{color:#a8e0b8}
+.cp{
+  display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:6px 13px;
+  border:1px solid #d6dae2; border-radius:8px; background:#fff; cursor:pointer;
+  font-family:inherit; font-size:13.2px; font-weight:600; color:var(--ink-2);
+}
+.cp:hover{border-color:var(--brand-2); color:var(--brand-ink)}
+
+footer{padding:38px 0 46px; text-align:center; color:var(--ink-3); font-size:13.8px}
+footer a{color:var(--ink-2)}
+.lic{margin-top:8px; font-size:13px}
+
+@media(max-width:640px){
+  body{font-size:16px}
+  section{padding:46px 0}
+  .authors{font-size:15px; line-height:1.95}
+  .btn{padding:9px 16px; font-size:14px}
+  .stat .n{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">Vibe<span>Worlding</span></div>
+    <div class="navlinks">
+      <a href="#framework">Framework</a>
+      <a href="#worlds">Seed 3D Worlds</a>
+      <a href="#views">Multi-View</a>
+      <a href="#assets3d">Assets 360°</a>
+      <a href="#assets">Library</a>
+      <a href="#bench">VWE-Bench</a>
+      <a href="#results">Results</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <h1>VibeWorlding<span class="q">Can Multimodal Agents Construct 3D Open Worlds End-to-End?</span></h1>
+    <div class="venue">Technical Report</div>
+
+    <div class="authors">
+      <b>Yansong Ning</b><sup>1*</sup>,
+      <b>Jingwen Ye</b><sup>2</sup>,
+      <b>Zhongkai Wu</b><sup>2</sup>,
+      <b>Yang Sun</b><sup>2</sup>,
+      <b>Yiqin Zhu</b><sup>2</sup>,
+      <b>Xingyi Li</b><sup>2</sup>,
+      <b>Weidong Zhang</b><sup>2</sup>,
+      <b>Hao Liu</b><sup>1†</sup>
+    </div>
+    <div class="affil">
+      <span class="m"><sup>1</sup> AI Thrust, HKUST(GZ)</span>
+      <span class="m"><sup>2</sup> TEG AIPD, Tencent</span>
+    </div>
+    <div class="note">* Work done during internship at Tencent. &nbsp;&nbsp; † Corresponding author.</div>
+
+    <div class="btns">
+      <a class="btn" href="https://github.com/usail-hkust/VibeWorlding-Gym">
+        <svg class="ic" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-2.91-.88-2.91-3.06 0-.62.22-1.13.58-1.53-.05-.14-.25-.72.06-1.5 0 0 .6-.19 1.97.73a5.5 5.5 0 0 1 1.49-.2c.51 0 1.02.07 1.5.2 1.36-.93 1.96-.73 1.96-.73.31.78.11 1.36.06 1.5.36.4.58.91.58 1.53 0 2.19-1.13 2.86-2.92 3.06.29.25.55.74.55 1.5 0 1.08-.01 1.95-.01 2.22 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        Code
+      </a>
+      <a class="btn alt" href="https://huggingface.co/datasets/usail-hkust/VWE-Bench">🤗 VWE-Bench Dataset</a>
+      <a class="btn alt" href="https://huggingface.co/collections/usail-hkust/vibeworlder">🤗 VibeWorlder Models</a>
+    </div>
+  </div>
+
+  <div class="teaser">
+    <figure>
+      <img src="docs/figures/framework.png" alt="The VibeWorlding framework: a vibe worlding agent plans, invokes 3D tools, observes rendered feedback, and iterates; VWE-Bench provides evaluation data and VibeWorlding-Gym provides the RL training framework.">
+      <figcaption><b>The VibeWorlding framework.</b> A vibe worlding agent plans autonomously, invokes 3D tools through MCP in a Blender sandbox, then observes and reflects on multimodal feedback — the 3D map plus five rendered views — over multi-turn interaction. <b>VWE-Bench</b> (bottom left) is the evaluation suite; <b>VibeWorlding-Gym</b> (bottom right) is the joint multimodal RL post-training framework, sharing one sandbox and one rubric-based verifier.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<section id="stats">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="n">2,616</div><div class="l">Curated 3D assets</div></div>
+      <div class="stat"><div class="n">323</div><div class="l">Human-annotated seed worlds</div></div>
+      <div class="stat"><div class="n">6,828</div><div class="l">Reverse-synthesized queries</div></div>
+      <div class="stat"><div class="n">59.3<span style="font-size:.6em">%</span></div><div class="l">Best overall Pass@1 (ours)</div></div>
+      <div class="stat"><div class="n">64.5 / 55.9</div><div class="l">Pass@1, Verified / Unverified</div></div>
+    </div>
+
+    <figure class="fig pad">
+      <img src="docs/figures/samples.png" alt="Illustrative assets from small to large, and illustrative 3D seed worlds with asset counts from low to high." loading="lazy">
+      <figcaption><b>Left:</b> illustrative assets, size class from small to large. <b>Right:</b> illustrative seed 3D worlds, asset count from low to high.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="framework" class="tint">
+  <div class="wrap">
+    <h2>How the Agent Works</h2>
+    <div class="sub">Each turn the agent sees the current 3D map and five rendered views, calls a tool, and the scene is re-rendered — so it can <em>see</em> what it built and fix it.</div>
+
+    <div class="flow">
+      <div class="step">
+        <div class="k">1</div>
+        <h4>Autonomous planning</h4>
+        <p>Infer the user's intent from the query, plan a scene layout, and decide which 3D tools to invoke.</p>
+      </div>
+      <div class="step">
+        <div class="k">2</div>
+        <h4>Tool use via MCP</h4>
+        <p>Call <code>retrieve_assets</code>, <code>add</code>, <code>delete</code>, and <code>rotation_and_translation</code> inside the Blender sandbox.</p>
+      </div>
+      <div class="step">
+        <div class="k">3</div>
+        <h4>Observe &amp; reflect</h4>
+        <p>Read back the updated 3D map plus five re-rendered views, spot mistakes, and repair them next turn.</p>
+      </div>
+      <div class="step">
+        <div class="k">4</div>
+        <h4>Interactive 3D world</h4>
+        <p>Output a simulation-ready world, scored by a rubric verifier on physical feasibility and intent fulfillment.</p>
+      </div>
+    </div>
+
+    <div class="narrow" style="margin-top:34px">
+      <h3>Two task families</h3>
+      <p><b>3D world construction</b> builds a world from scratch given only a text query — for example, <em>"Create a simple farm with a barn, crop fields, fences, and a few trees."</em> <b>3D world refinement</b> edits an existing world — for example, <em>"Remove the car in the middle of the road and delete the two green buildings."</em></p>
+      <p>The same rubric-based verifier serves double duty: it scores the leaderboard <em>and</em> acts as the reward service for multimodal RL post-training, so evaluation and training are measured on identical criteria.</p>
+    </div>
+  </div>
+</section>
+
+<section id="worlds">
+  <div class="wrap">
+    <h2>Seed 3D Worlds</h2>
+    <div class="sub">Human-annotated seed worlds from VWE-Bench, spanning themes from ancient cities to desert oases. Below are <b>six representative examples</b> you can explore live — drag to orbit, scroll to zoom.</div>
+
+    <div class="w3d" id="w3d"></div>
+    <p class="hint3d">Six representative worlds, streamed as real GLB scenes on demand. Further down: the wider gallery of rendered worlds.</p>
+
+    <div class="toolbar" id="wbar" style="margin-top:34px"></div>
+    <div class="grid" id="wgrid"></div>
+    <div class="empty" id="wempty" hidden>No worlds in this category.</div>
+  </div>
+</section>
+
+<section id="views" class="tint">
+  <div class="wrap">
+    <h2>What the Agent Sees</h2>
+    <div class="sub">Every turn, the sandbox returns five rendered views — front, back, left, right, and top-down — alongside the textual 3D map. This is the exact visual feedback the agent reflects on.</div>
+    <div id="vlist"></div>
+  </div>
+</section>
+
+<section id="assets3d">
+  <div class="wrap">
+    <h2>Assets in 360°</h2>
+    <div class="sub"><b>Representative examples</b> from the 2,616-asset library, spanning the type taxonomy. Each spins automatically — drag to take control, scroll to zoom.</div>
+
+    <div class="toolbar" id="a3bar"></div>
+    <div class="a3grid" id="a3grid"></div>
+  </div>
+</section>
+
+<section id="assets" class="tint">
+  <div class="wrap">
+    <h2>Full Asset Library</h2>
+    <div class="sub"><b>Thumbnail previews</b> of the curated 2,616-GLB library — each asset carries a 5-digit <code>type_id</code>, display name, size class, and per-asset orientation correction. These are static renders for browsing; see <a href="#assets3d">Assets in 360°</a> for the interactive models.</div>
+
+    <div class="abar">
+      <input type="text" id="aq" placeholder="Search name or 5-digit id…" aria-label="Search assets">
+      <select id="atyp" aria-label="Filter by type"><option value="">All types</option></select>
+      <select id="asz" aria-label="Filter by size"><option value="">All sizes</option></select>
+      <select id="aor" aria-label="Filter by origin"><option value="">Natural + Artificial</option><option>Natural</option><option>Artificial</option></select>
+      <span class="ct" id="act"></span>
+    </div>
+    <div class="agrid" id="agrid"></div>
+    <div class="empty" id="aempty" hidden>No assets match this filter.</div>
+  </div>
+</section>
+
+<section id="bench" class="tint">
+  <div class="wrap narrow">
+    <h2>VWE-Bench</h2>
+    <div class="sub">6,828 reverse-synthesized multimodal queries across two task families. Only <em>asset-level edit (precise)</em> has a ground-truth map and is rule-verified; the rest are scored by an MLLM judge against our rubrics.</div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Query type</th><th>Sub-type</th><th class="n">Count</th></tr></thead>
+        <tbody>
+          <tr class="fam"><td rowspan="4">3D world construction</td><td>Theme only</td><td class="n">322</td></tr>
+          <tr><td>Theme + elements</td><td class="n">620</td></tr>
+          <tr><td>Full blueprint</td><td class="n">302</td></tr>
+          <tr><td>Distractor</td><td class="n">120</td></tr>
+          <tr class="fam"><td rowspan="6">3D world refinement</td><td>Asset-level edit (precise) <span class="tag t">verified</span></td><td class="n">1,710</td></tr>
+          <tr><td>Asset-level edit (fuzzy)</td><td class="n">1,462</td></tr>
+          <tr><td>Scene critique</td><td class="n">553</td></tr>
+          <tr><td>Scene guidance</td><td class="n">757</td></tr>
+          <tr><td>Scene restatement</td><td class="n">477</td></tr>
+          <tr><td>Complex description</td><td class="n">505</td></tr>
+          <tr class="tot"><td>Total</td><td></td><td class="n">6,828</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Data splits</h3>
+    <p>The three splits use completely <b>disjoint seed worlds</b> (264 SFT / 47 RL / 12 Test, summing to 323), so leaderboard numbers measure generalization rather than seed memorization.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Split</th><th>Contents</th><th class="n">Seeds</th></tr></thead>
+        <tbody>
+          <tr><td>Evaluation</td><td>254 cases (46 construction + 208 refinement)</td><td class="n">12</td></tr>
+          <tr><td>SFT</td><td>5,567 cases (1,129 construction + 4,438 refinement)</td><td class="n">264</td></tr>
+          <tr><td>RL</td><td>1,007 rollout prompts (189 construction + 818 refinement)</td><td class="n">47</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <h2>Results</h2>
+    <div class="sub">Pass@1 on the 254-case evaluation split, reported separately on the Verified and Unverified query families.</div>
+
+    <figure class="fig pad">
+      <img src="docs/figures/leaderboard.png" alt="VWE-Bench leaderboard: Pass@1 on Verified and Unverified query sets. VibeWorlder-30B-A3B leads both panels." loading="lazy">
+      <figcaption><b>VWE-Bench leaderboard (Pass@1).</b> <b>Verified</b> (left) is rule-based and tests whether a model can hit a known target map. <b>Unverified</b> (right) is judged by an MLLM against intent rubrics, and is where post-training pays off most. Our <b>VibeWorlder-30B-A3B</b> attains the best Pass@1 on both splits (64.5 / 55.9).</figcaption>
+    </figure>
+
+    <div class="narrow">
+      <h3>Findings</h3>
+      <p><b>Frontier MLLMs are far from solving this task.</b> Even GPT-5.5 (57.3% overall) and Qwen3.8-Max (56.9%) stay below ~60% Pass@1. The bottleneck traces to <em>precise 3D world editing</em> — hitting an exact target map, not merely producing something plausible. Untrained open backbones fare far worse: Qwen3-VL-8B reaches 5.3% and Qwen3-VL-30B-A3B 13.6%.</p>
+      <p><b>Post-training closes the gap to the frontier.</b> Cold-start SFT and joint multimodal RL together lift the 30B-A3B backbone from 13.6% (base) to 34.5% (SFT) to <b>59.3%</b> after RL — the best overall Pass@1 of any model evaluated, edging out GPT-5.5. Its lead is widest on the Verified track (64.5 vs. 60.4).</p>
+      <p><b>The 8B model punches above its weight.</b> VibeWorlder-8B reaches 41.4% overall, matching Gemini-3.1-pro (42.7%) while clearly surpassing it on Verified (59.3 vs. 44.4), exactly where rule-checkable editing is required.</p>
+      <p><b>The two stages improve different axes.</b> Cold-start SFT installs foundational physical and ecological competence, but delivers gains almost exclusively in 3D understanding (0.02 → 0.17). Multimodal RL is what unlocks spatial capability: 3D understanding climbs 0.17 → 0.80 and 3D reasoning 0.04 → 0.69 — though reasoning stays below understanding, so it is only <em>partially</em> unlocked.</p>
+    </div>
+
+    <figure class="fig pad">
+      <img src="docs/figures/rl_reward.png" alt="Reward curves on the validation set and per query type during RL post-training, comparing the run initialized from the cold-start SFT policy against RL applied directly to the base backbone." loading="lazy">
+      <figcaption><b>Reward during RL post-training</b> (VibeWorlder-8B). Solid curves are the flagship run <b>with cold-start</b> — RL from the cold-start SFT policy; dashed curves are the <b>w/o cold-start</b> ablation, applying RL directly to the base backbone. The ablation learns slowly and flattens early, while the cold-started run climbs steadily and pulls ahead on every split — most dramatically on the verified queries, where the reward more than doubles.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="bibtex" class="tint">
+  <div class="wrap narrow">
+    <h2>BibTeX</h2>
+    <div class="sub">If you find VibeWorlding useful, please consider citing our work.</div>
+    <button class="cp" id="cpbtn" type="button">Copy citation</button>
+<pre id="bib"><span class="k">@article</span>{vibeworlding2026,
+  <span class="k">title</span>   = {<span class="v">VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?</span>},
+  <span class="k">author</span>  = {<span class="v">Ning, Yansong and Ye, Jingwen and Wu, Zhongkai and Sun, Yang and
+             Zhu, Yiqin and Li, Xingyi and Zhang, Weidong and Liu, Hao</span>},
+  <span class="k">journal</span> = {<span class="v">arXiv preprint</span>},
+  <span class="k">year</span>    = {<span class="v">2026</span>}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>AI Thrust, HKUST(GZ) &nbsp;·&nbsp; TEG AIPD, Tencent</div>
+    <div class="lic">Page template inspired by <a href="https://nerfies.github.io/">Nerfies</a>. Source code released under the repository license.</div>
+  </div>
+</footer>
+
+<script type="module" src="docs/web/lib/model-viewer.min.js"></script>
+<script src="docs/web/data.js?v=2"></script>
+<script src="docs/web/glb.js?v=2"></script>
+<script>
+(function(){
+  "use strict";
+  var W = window.VW_WORLDS || [], V = window.VW_VIEWS || [],
+      A = window.VW_ASSETS || [], S = window.VW_STATS || {};
+  var esc = function(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+
+  /* ---------- worlds ---------- */
+  var wgrid=document.getElementById("wgrid"), wbar=document.getElementById("wbar"),
+      wempty=document.getElementById("wempty"), wfam="";
+
+  var fams=[]; W.forEach(function(w){ if(fams.indexOf(w.fam)<0) fams.push(w.fam); });
+  fams.sort();
+
+  function chip(label,val){
+    var b=document.createElement("button");
+    b.className="chip"+(val===wfam?" on":""); b.type="button"; b.textContent=label;
+    b.onclick=function(){ wfam=val; drawBar(); drawWorlds(); };
+    return b;
+  }
+  function drawBar(){
+    wbar.textContent="";
+    wbar.appendChild(chip("All ("+W.length+")",""));
+    fams.forEach(function(f){
+      var n=W.filter(function(w){return w.fam===f;}).length;
+      wbar.appendChild(chip(f+" ("+n+")",f));
+    });
+  }
+  function drawWorlds(){
+    var list = wfam ? W.filter(function(w){return w.fam===wfam;}) : W;
+    wempty.hidden = list.length>0;
+    wgrid.innerHTML = list.map(function(w){
+      var tags="";
+      if(w.terr)   tags+='<span class="tag t">'+esc(w.terr)+'</span>';
+      if(w.ground) tags+='<span class="tag g">'+esc(w.ground)+' ground</span>';
+      if(w.span)   tags+='<span class="tag s">'+esc(w.span)+'</span>';
+      return ''+
+      '<figure class="card">'+
+        '<div class="ph">'+
+          '<img src="docs/web/worlds/w'+esc(w.id)+'.jpg" alt="'+esc(w.title)+' seed 3D world, '+esc(w.n)+' placed assets" width="896" height="504" loading="lazy" decoding="async">'+
+          '<span class="fam">'+esc(w.fam)+'</span>'+
+        '</div>'+
+        '<div class="bd">'+
+          '<div class="ti">'+esc(w.title)+'</div>'+
+          '<div class="mt">'+tags+'</div>'+
+        '</div>'+
+      '</figure>';
+    }).join("");
+  }
+  if(W.length){ drawBar(); drawWorlds(); }
+
+  /* ---------- multi-view ---------- */
+  var vlist=document.getElementById("vlist");
+  if(V.length){
+    vlist.innerHTML = V.map(function(s){
+      return ''+
+      '<div class="vwrap">'+
+        '<div class="vhd">'+
+          '<span class="t">'+esc(s.title)+'</span>'+
+          '<span class="s">'+esc(s.n)+' placed assets'+(s.terr?' · '+esc(s.terr):'')+' · seed #'+esc(s.id)+'</span>'+
+        '</div>'+
+        '<div class="vrow">'+ s.views.map(function(v){
+          return '<div class="vcell"><img src="docs/web/views/'+esc(s.id)+'_'+esc(v.i)+'.jpg" alt="'+esc(s.title)+' — '+esc(v.v)+' view" width="640" height="360" loading="lazy" decoding="async"><span class="lb">'+esc(v.v)+'</span></div>';
+        }).join("") +'</div>'+
+      '</div>';
+    }).join("");
+  }
+
+  /* ---------- assets ---------- */
+  var agrid=document.getElementById("agrid"), aempty=document.getElementById("aempty"),
+      act=document.getElementById("act"), aq=document.getElementById("aq"),
+      atyp=document.getElementById("atyp"), asz=document.getElementById("asz"),
+      aor=document.getElementById("aor");
+
+  (S.types||[]).forEach(function(t){
+    var o=document.createElement("option"); o.value=t; o.textContent=t; atyp.appendChild(o); });
+  ["Tiny","Small","Medium","Large"].forEach(function(z){
+    if((S.sizes||[]).indexOf(z)<0) return;
+    var o=document.createElement("option"); o.value=z; o.textContent=z; asz.appendChild(o); });
+
+  function drawAssets(){
+    var q=aq.value.trim().toLowerCase(), t=atyp.value, z=asz.value, o=aor.value;
+    var list=A.filter(function(a){
+      if(t && a.typ!==t) return false;
+      if(z && a.sz!==z) return false;
+      if(o && a.or!==o) return false;
+      if(q && (a.en||"").toLowerCase().indexOf(q)<0 && String(a.id).indexOf(q)<0) return false;
+      return true;
+    });
+    aempty.hidden = list.length>0;
+    act.textContent = list.length+" shown · "+(S.assets_total||0)+" in library";
+    agrid.innerHTML = list.map(function(a){
+      var d=a.d||[];
+      var dim = d.length===3 ? d[0]+"×"+d[1]+"×"+d[2]+" m" : "";
+      return ''+
+      '<div class="acell" title="'+esc(a.en)+' — '+esc(a.typ)+' · '+esc(a.sz)+' · '+esc(a.or)+(dim?' · '+esc(dim):'')+'">'+
+        '<img src="data:image/jpeg;base64,'+a.img+'" alt="'+esc(a.en)+'" width="90" height="90" loading="lazy" decoding="async">'+
+        '<div class="an">'+esc(a.en)+'</div>'+
+        '<div class="ai">'+esc(a.id)+'</div>'+
+      '</div>';
+    }).join("");
+  }
+  if(A.length){
+    var deb;
+    aq.addEventListener("input", function(){ clearTimeout(deb); deb=setTimeout(drawAssets,140); });
+    [atyp,asz,aor].forEach(function(el){ el.addEventListener("change", drawAssets); });
+    drawAssets();
+  }
+
+  /* ---------- 3D viewers ----------
+     GLBs are multi-MB, so nothing downloads until the user asks for it: each
+     stage shows a click-to-load poster, and only then is <model-viewer> created.
+     Worlds are heavy enough that we never autoplay them; assets auto-rotate. */
+  var A3 = window.VW_A3D || [], W3 = window.VW_W3D || [];
+
+  function mkStage(host, src, opts){
+    var stage=document.createElement("div"); stage.className="stage";
+    if(opts.poster){
+      var ps=document.createElement("img");
+      ps.className="poster"; ps.src=opts.poster; ps.alt=opts.name+" preview";
+      ps.loading="lazy"; ps.decoding="async";
+      stage.appendChild(ps);
+    }
+    if(opts.badge){
+      var bd=document.createElement("span"); bd.className="badge3d"; bd.textContent=opts.badge;
+      stage.appendChild(bd);
+    }
+    var btn=document.createElement("button");
+    btn.className="load"; btn.type="button";
+    btn.setAttribute("aria-label","Load 3D model: "+opts.name);
+    btn.innerHTML='<span class="ico">3D</span><span class="tx">'+esc(opts.cta||"View in 3D")+
+                  '</span><span class="sz">'+esc(opts.mb)+' MB</span>';
+    btn.addEventListener("click", function(){
+      btn.remove();
+      var ps=stage.querySelector(".poster"); if(ps) ps.remove();
+      var sp=document.createElement("div"); sp.className="spin"; sp.textContent="Loading…";
+      stage.appendChild(sp);
+      var mv=document.createElement("model-viewer");
+      mv.setAttribute("src", src);
+      mv.setAttribute("alt", opts.name+" — interactive 3D model");
+      mv.setAttribute("camera-controls","");
+      mv.setAttribute("touch-action","pan-y");
+      mv.setAttribute("interaction-prompt","none");
+      mv.setAttribute("shadow-intensity", opts.shadow||"0.9");
+      mv.setAttribute("exposure","1.05");
+      mv.setAttribute("min-field-of-view","8deg");
+      mv.setAttribute("camera-orbit", opts.orbit||"32deg 68deg 105%");
+      if(opts.spin){ mv.setAttribute("auto-rotate",""); mv.setAttribute("rotation-per-second","22deg"); }
+      mv.addEventListener("load", function(){ sp.remove(); });
+      mv.addEventListener("error", function(){ sp.textContent="Could not load model."; });
+      stage.appendChild(mv);
+    });
+    stage.appendChild(btn);
+    host.appendChild(stage);
+  }
+
+  /* worlds */
+  var w3host=document.getElementById("w3d");
+  if(w3host && W3.length){
+    W3.forEach(function(w){
+      var card=document.createElement("div"); card.className="v";
+      mkStage(card, "docs/web/glb/w"+w.id+".glb", {
+        name:w.title, mb:w.mb, poster:w.poster||null,
+        cta:"Explore this world", orbit:"38deg 62deg 105%", shadow:"1"
+      });
+      var bd=document.createElement("div"); bd.className="bd";
+      bd.innerHTML='<div class="ti">'+esc(w.title)+'</div><div class="mt">'+
+        (w.terr?'<span class="tag t">'+esc(w.terr)+'</span>':'')+
+        '<span class="tag">seed #'+esc(w.id)+'</span></div>';
+      card.appendChild(bd); w3host.appendChild(card);
+    });
+  }
+
+  /* assets, with a type filter mirroring the gallery */
+  var a3host=document.getElementById("a3grid"), a3bar=document.getElementById("a3bar"), a3typ="";
+  function drawA3(){
+    a3host.textContent="";
+    A3.filter(function(a){ return !a3typ || a.typ===a3typ; }).forEach(function(a){
+      var card=document.createElement("div"); card.className="v";
+      mkStage(card, "docs/web/glb/a"+a.id+".glb", {
+        name:a.en, mb:a.mb, cta:"Spin it",
+        orbit:"30deg 70deg 105%", spin:true, shadow:"0.8"
+      });
+      var d=a.d||[];
+      var bd=document.createElement("div"); bd.className="bd";
+      bd.innerHTML='<div class="ti">'+esc(a.en)+'</div><div class="mt">'+
+        '<span class="tag">'+esc(a.typ)+'</span>'+
+        '<span class="tag s">'+esc(a.sz)+'</span>'+
+        (d.length===3?'<span class="tag g">'+esc(d.join("×"))+' m</span>':'')+
+        '</div>';
+      card.appendChild(bd); a3host.appendChild(card);
+    });
+  }
+  if(a3host && A3.length){
+    var a3f=[]; A3.forEach(function(a){ if(a3f.indexOf(a.typ)<0) a3f.push(a.typ); }); a3f.sort();
+    function a3chip(label,val){
+      var b=document.createElement("button");
+      b.className="chip"+(val===a3typ?" on":""); b.type="button"; b.textContent=label;
+      b.onclick=function(){ a3typ=val; a3bar.textContent="";
+        a3bar.appendChild(a3chip("All ("+A3.length+")",""));
+        a3f.forEach(function(t){ a3bar.appendChild(a3chip(t,t)); });
+        drawA3(); };
+      return b;
+    }
+    a3bar.appendChild(a3chip("All ("+A3.length+")",""));
+    a3f.forEach(function(t){ a3bar.appendChild(a3chip(t,t)); });
+    drawA3();
+  }
+
+  /* ---------- copy bibtex ---------- */
+  var btn=document.getElementById("cpbtn"), pre=document.getElementById("bib");
+  btn.addEventListener("click", function(){
+    var txt=pre.innerText;
+    var done=function(){ var o=btn.textContent; btn.textContent="Copied!";
+      setTimeout(function(){ btn.textContent=o; },1600); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){});
+    } else {
+      var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>
