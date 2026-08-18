@@ -1,7 +1,7 @@
 # <img src="docs/figures/ours.png" height="45" style="vertical-align:middle"> VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?
 
 <p align="center">
-  <a href="https://yasning.github.io/VibeWorlding"> Assets Preview </a>
+  <a href="https://usail-hkust.github.io/VibeWorlding-Gym/"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> Project Page </a>
   <a href="https://huggingface.co/datasets/usail-hkust/VWE-Bench"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VWE-Bench Dataset</a> &nbsp;|&nbsp;
   <a href="https://huggingface.co/collections/usail-hkust/vibeworlder"><img src="docs/figures/huggingface.png" height="16" style="vertical-align:middle"> VibeWorlder Models</a> &nbsp;|&nbsp;
   <a href="https://arxiv.org/pdf/2608.15265"><img src="docs/figures/ours.png" height="16" style="vertical-align:middle"> VibeWorlding Paper</a>
