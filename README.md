@@ -102,7 +102,8 @@ VibeWorlding-Gym/
 ## 2. VWE-Bench Statistics
 
 VWE-Bench is what the agent is benchmarked and trained on. It is built from
-three ingredients, all shipped in this repo.
+three ingredients, all shipped in this repo. 
+You can preview the assets in via <a href="https://yasning.github.io/VibeWorlding"> here </a>
 
 **Assets & seed worlds.** A curated library of **2,616 GLB assets** (furniture,
 vegetation, buildings, vehicles, food, … — each with a 5-digit `type_id`,
