@@ -200,6 +200,8 @@ model-viewer{
   border:1px solid var(--line); pointer-events:none;
 }
 .hint3d{margin:16px 0 0; text-align:center; font-size:13.2px; color:var(--ink-3)}
+.galh{margin:52px 0 4px; text-align:center; font-size:20px; letter-spacing:-.018em}
+.galsub{margin:0 auto 22px}
 
 /* ---------- views ---------- */
 .vwrap{background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:0 0 18px; box-shadow:0 1px 2px rgba(16,24,40,.04)}
@@ -216,23 +218,6 @@ model-viewer{
 @media(max-width:760px){ .vrow{grid-template-columns:repeat(2,1fr)} }
 
 /* ---------- assets ---------- */
-.abar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin:0 0 20px}
-.abar input,.abar select{
-  font-family:inherit; font-size:13.8px; padding:8px 12px; border:1px solid #d6dae2;
-  border-radius:9px; background:#fff; color:var(--ink); outline:none;
-}
-.abar input{width:216px}
-.abar input:focus,.abar select:focus{border-color:var(--brand-2); box-shadow:0 0 0 3px rgba(91,141,239,.14)}
-.abar .ct{font-size:13.2px; color:var(--ink-3); font-variant-numeric:tabular-nums}
-.agrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:11px}
-.acell{
-  background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center;
-  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-}
-.acell:hover{transform:translateY(-2px); border-color:var(--brand-2); box-shadow:var(--shadow)}
-.acell img{width:100%; aspect-ratio:1; object-fit:contain; background:var(--bg-3); border-radius:7px}
-.acell .an{font-size:11.6px; font-weight:600; margin-top:6px; line-height:1.35; height:2.7em; overflow:hidden; letter-spacing:-.005em}
-.acell .ai{font-size:10.4px; color:var(--ink-3); margin-top:3px; font-family:"JetBrains Mono",monospace}
 .empty{text-align:center; color:var(--ink-3); padding:44px 0; font-size:14.5px}
 
 /* ---------- tables ---------- */
@@ -298,7 +283,6 @@ footer a{color:var(--ink-2)}
       <a href="#worlds">Seed 3D Worlds</a>
       <a href="#views">Multi-View</a>
       <a href="#assets3d">Assets 360°</a>
-      <a href="#assets">Library</a>
       <a href="#bench">VWE-Bench</a>
       <a href="#results">Results</a>
       <a href="#bibtex">BibTeX</a>
@@ -404,9 +388,11 @@ footer a{color:var(--ink-2)}
     <div class="sub">Human-annotated seed worlds from VWE-Bench, spanning themes from ancient cities to desert oases. Below are <b>six representative examples</b> you can explore live — drag to orbit, scroll to zoom.</div>
 
     <div class="w3d" id="w3d"></div>
-    <p class="hint3d">Six representative worlds, streamed as real GLB scenes on demand. Further down: the wider gallery of rendered worlds.</p>
+    <p class="hint3d">Six representative worlds, streamed as real GLB scenes on demand.</p>
 
-    <div class="toolbar" id="wbar" style="margin-top:34px"></div>
+    <h3 class="galh">Representative examples from the 323 seed worlds</h3>
+    <div class="sub galsub">Rendered in the Blender sandbox, grouped by theme family.</div>
+    <div class="toolbar" id="wbar"></div>
     <div class="grid" id="wgrid"></div>
     <div class="empty" id="wempty" hidden>No worlds in this category.</div>
   </div>
@@ -420,30 +406,13 @@ footer a{color:var(--ink-2)}
   </div>
 </section>
 
-<section id="assets3d">
+<section id="assets3d" class="tint">
   <div class="wrap">
     <h2>Assets in 360°</h2>
     <div class="sub"><b>Representative examples</b> from the 2,616-asset library, spanning the type taxonomy. Each spins automatically — drag to take control, scroll to zoom.</div>
 
     <div class="toolbar" id="a3bar"></div>
     <div class="a3grid" id="a3grid"></div>
-  </div>
-</section>
-
-<section id="assets" class="tint">
-  <div class="wrap">
-    <h2>Full Asset Library</h2>
-    <div class="sub"><b>Thumbnail previews</b> of the curated 2,616-GLB library — each asset carries a 5-digit <code>type_id</code>, display name, size class, and per-asset orientation correction. These are static renders for browsing; see <a href="#assets3d">Assets in 360°</a> for the interactive models.</div>
-
-    <div class="abar">
-      <input type="text" id="aq" placeholder="Search name or 5-digit id…" aria-label="Search assets">
-      <select id="atyp" aria-label="Filter by type"><option value="">All types</option></select>
-      <select id="asz" aria-label="Filter by size"><option value="">All sizes</option></select>
-      <select id="aor" aria-label="Filter by origin"><option value="">Natural + Artificial</option><option>Natural</option><option>Artificial</option></select>
-      <span class="ct" id="act"></span>
-    </div>
-    <div class="agrid" id="agrid"></div>
-    <div class="empty" id="aempty" hidden>No assets match this filter.</div>
   </div>
 </section>
 
@@ -534,13 +503,12 @@ footer a{color:var(--ink-2)}
 </footer>
 
 <script type="module" src="docs/web/lib/model-viewer.min.js"></script>
-<script src="docs/web/data.js?v=2"></script>
-<script src="docs/web/glb.js?v=2"></script>
+<script src="docs/web/data.js?v=4"></script>
+<script src="docs/web/glb.js?v=4"></script>
 <script>
 (function(){
   "use strict";
-  var W = window.VW_WORLDS || [], V = window.VW_VIEWS || [],
-      A = window.VW_ASSETS || [], S = window.VW_STATS || {};
+  var W = window.VW_WORLDS || [], V = window.VW_VIEWS || [];
   var esc = function(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
 
@@ -605,51 +573,10 @@ footer a{color:var(--ink-2)}
     }).join("");
   }
 
-  /* ---------- assets ---------- */
-  var agrid=document.getElementById("agrid"), aempty=document.getElementById("aempty"),
-      act=document.getElementById("act"), aq=document.getElementById("aq"),
-      atyp=document.getElementById("atyp"), asz=document.getElementById("asz"),
-      aor=document.getElementById("aor");
-
-  (S.types||[]).forEach(function(t){
-    var o=document.createElement("option"); o.value=t; o.textContent=t; atyp.appendChild(o); });
-  ["Tiny","Small","Medium","Large"].forEach(function(z){
-    if((S.sizes||[]).indexOf(z)<0) return;
-    var o=document.createElement("option"); o.value=z; o.textContent=z; asz.appendChild(o); });
-
-  function drawAssets(){
-    var q=aq.value.trim().toLowerCase(), t=atyp.value, z=asz.value, o=aor.value;
-    var list=A.filter(function(a){
-      if(t && a.typ!==t) return false;
-      if(z && a.sz!==z) return false;
-      if(o && a.or!==o) return false;
-      if(q && (a.en||"").toLowerCase().indexOf(q)<0 && String(a.id).indexOf(q)<0) return false;
-      return true;
-    });
-    aempty.hidden = list.length>0;
-    act.textContent = list.length+" shown · "+(S.assets_total||0)+" in library";
-    agrid.innerHTML = list.map(function(a){
-      var d=a.d||[];
-      var dim = d.length===3 ? d[0]+"×"+d[1]+"×"+d[2]+" m" : "";
-      return ''+
-      '<div class="acell" title="'+esc(a.en)+' — '+esc(a.typ)+' · '+esc(a.sz)+' · '+esc(a.or)+(dim?' · '+esc(dim):'')+'">'+
-        '<img src="data:image/jpeg;base64,'+a.img+'" alt="'+esc(a.en)+'" width="90" height="90" loading="lazy" decoding="async">'+
-        '<div class="an">'+esc(a.en)+'</div>'+
-        '<div class="ai">'+esc(a.id)+'</div>'+
-      '</div>';
-    }).join("");
-  }
-  if(A.length){
-    var deb;
-    aq.addEventListener("input", function(){ clearTimeout(deb); deb=setTimeout(drawAssets,140); });
-    [atyp,asz,aor].forEach(function(el){ el.addEventListener("change", drawAssets); });
-    drawAssets();
-  }
-
   /* ---------- 3D viewers ----------
      GLBs are multi-MB, so nothing downloads until the user asks for it: each
      stage shows a click-to-load poster, and only then is <model-viewer> created.
-     Worlds are heavy enough that we never autoplay them; assets auto-rotate. */
+     Both worlds and assets auto-rotate once loaded. */
   var A3 = window.VW_A3D || [], W3 = window.VW_W3D || [];
 
   function mkStage(host, src, opts){
@@ -683,8 +610,20 @@ footer a{color:var(--ink-2)}
       mv.setAttribute("shadow-intensity", opts.shadow||"0.9");
       mv.setAttribute("exposure","1.05");
       mv.setAttribute("min-field-of-view","8deg");
-      mv.setAttribute("camera-orbit", opts.orbit||"32deg 68deg 105%");
-      if(opts.spin){ mv.setAttribute("auto-rotate",""); mv.setAttribute("rotation-per-second","22deg"); }
+      if(opts.spin){
+        // For auto-rotating viewers, set the starting pose via the property once
+        // the model is ready. Keeping a camera-orbit *attribute* pins the orbit
+        // and defeats auto-rotate, and removing it later snaps the camera back
+        // to the default pose -- so never set the attribute at all here.
+        mv.setAttribute("auto-rotate","");
+        mv.setAttribute("auto-rotate-delay","300");
+        mv.setAttribute("rotation-per-second", opts.rps||"18deg");
+        mv.addEventListener("load", function(){
+          if(opts.orbit) mv.cameraOrbit=opts.orbit;
+        }, {once:true});
+      } else {
+        mv.setAttribute("camera-orbit", opts.orbit||"32deg 68deg 105%");
+      }
       mv.addEventListener("load", function(){ sp.remove(); });
       mv.addEventListener("error", function(){ sp.textContent="Could not load model."; });
       stage.appendChild(mv);
@@ -700,7 +639,7 @@ footer a{color:var(--ink-2)}
       var card=document.createElement("div"); card.className="v";
       mkStage(card, "docs/web/glb/w"+w.id+".glb", {
         name:w.title, mb:w.mb, poster:w.poster||null,
-        cta:"Explore this world", orbit:"38deg 62deg 105%", shadow:"1"
+        cta:"Explore this world", orbit:"38deg 62deg 105%", shadow:"1", spin:true, rps:"12deg"
       });
       var bd=document.createElement("div"); bd.className="bd";
       bd.innerHTML='<div class="ti">'+esc(w.title)+'</div><div class="mt">'+
