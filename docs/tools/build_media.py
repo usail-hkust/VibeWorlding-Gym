@@ -147,49 +147,9 @@ for r in show:
     views.append(dict(id=r['id'],title=r['title'],n=r['n'],terr=r['terr'],views=vs))
 print("showcase:",[v['id'] for v in views])
 
-# ---------- asset subset ----------
-s=open(os.path.join(ROOT,"render_in_blender/assets/asset_preview.html"),encoding='utf-8',errors='replace').read()
-i=s.find("const DATA = [")
-arr=s[i+len("const DATA = "):]
-DATA=json.loads(arr[:arr.find("];")+1])
-byt=defaultdict(list)
-for a in DATA: byt[a['typ']].append(a)
-PER=26
-sub=[]
-for t,lst in byt.items():
-    lst.sort(key=lambda a:-(a.get('fc') or 0))
-    step=max(1,len(lst)//PER)
-    sub+=lst[::step][:PER]
-sub.sort(key=lambda a:(a['typ'],a['en']))
-def dekey(b64, bg=(251,252,253), thr=26):
-    im=Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
-    a=np.asarray(im).astype(np.float32)
-    fg=a.max(axis=2)>thr
-    fg=ndimage.binary_closing(fg,np.ones((3,3)))
-    fg=ndimage.binary_opening(fg,np.ones((3,3)))
-    fg=ndimage.binary_fill_holes(fg)
-    lbl,n=ndimage.label(fg)
-    if n>1:
-        sz=ndimage.sum(fg,lbl,range(1,n+1))
-        fg=np.isin(lbl,[j+1 for j,v in enumerate(sz) if v>=0.12*sz.max()])
-    alpha=np.clip(ndimage.gaussian_filter(fg.astype(np.float32),0.6),0,1)[...,None]
-    out=a*alpha+np.array(bg,np.float32)*(1-alpha)
-    im2=Image.fromarray(np.clip(out,0,255).astype(np.uint8))
-    buf=io.BytesIO(); im2.save(buf,"JPEG",quality=82,optimize=True)
-    return base64.b64encode(buf.getvalue()).decode()
-
-keep=[]
-for a in sub:
-    r={k:a[k] for k in ("id","en","typ","sz","or","fc","d")}
-    r['img']=dekey(a['img'])
-    keep.append(r)
-print("asset subset: %d of %d, payload %.2f MB"%(len(keep),len(DATA),sum(len(a['img']) for a in keep)/1e6))
-
-stats=dict(assets_total=len(DATA), worlds_total=len(rows),
-           types=sorted(byt.keys()), sizes=sorted({a['sz'] for a in DATA}))
+stats=dict(worlds_total=len(rows))
 with open(os.path.join(OUT,"data.js"),"w",encoding='utf-8') as f:
     f.write("window.VW_WORLDS=%s;\n"%json.dumps(meta,ensure_ascii=False))
     f.write("window.VW_VIEWS=%s;\n"%json.dumps(views,ensure_ascii=False))
-    f.write("window.VW_STATS=%s;\n"%json.dumps(stats,ensure_ascii=False))
-    f.write("window.VW_ASSETS=%s;\n"%json.dumps(keep,ensure_ascii=False))
+
 print("data.js %.2f MB"%(os.path.getsize(os.path.join(OUT,"data.js"))/1e6))
