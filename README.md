@@ -471,14 +471,12 @@ our local models (`vibeworlder`), Gemini official (`gemini-flash`,
 ## 8. Citation
 
 ```bibtex
-@misc{ning2026vibeworldingmultimodalagentsconstruct,
-      title={VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?}, 
-      author={Yansong Ning and Jingwen Ye and Zhongkai Wu and Yang Sun and Yiqin Zhu and Xingyi Li and Weidong Zhang and Hao Liu},
-      year={2026},
-      eprint={2608.15265},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2608.15265}, 
+@article{vibeworlding2026,
+  title   = {VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?},
+  author  = {Ning, Yansong and Ye, Jingwen and Wu, Zhongkai and Sun, Yang and
+             Zhu, Yiqin and Li, Xingyi and Zhang, Weidong and Liu, Hao},
+  journal = {arXiv preprint},
+  year    = {2026}
 }
 
 ```
