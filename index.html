@@ -388,7 +388,7 @@ footer a{color:var(--ink-2)}
     <div class="sub">Human-annotated seed worlds from VWE-Bench, spanning themes from ancient cities to desert oases. Below are <b>six representative examples</b> you can explore live — drag to orbit, scroll to zoom.</div>
 
     <div class="w3d" id="w3d"></div>
-    <p class="hint3d">Six representative worlds, streamed as real GLB scenes on demand.</p>
+    <p class="hint3d">Six representative worlds, streamed as real GLB scenes and rendered live in your browser.</p>
 
     <h3 class="galh">Representative examples from the 323 seed worlds</h3>
     <div class="sub galsub">Rendered in the Blender sandbox, grouped by theme family.</div>
@@ -503,8 +503,8 @@ footer a{color:var(--ink-2)}
 </footer>
 
 <script type="module" src="docs/web/lib/model-viewer.min.js"></script>
-<script src="docs/web/data.js?v=4"></script>
-<script src="docs/web/glb.js?v=4"></script>
+<script src="docs/web/data.js?v=6"></script>
+<script src="docs/web/glb.js?v=6"></script>
 <script>
 (function(){
   "use strict";
@@ -574,31 +574,77 @@ footer a{color:var(--ink-2)}
   }
 
   /* ---------- 3D viewers ----------
-     GLBs are multi-MB, so nothing downloads until the user asks for it: each
-     stage shows a click-to-load poster, and only then is <model-viewer> created.
+     Models load by themselves as they scroll into view -- no click needed. Two
+     constraints shape this:
+
+     1. Bytes. GLBs are multi-MB, so an IntersectionObserver holds each one back
+        until it is nearly on screen. A visitor who never reaches a section pays
+        nothing for it.
+     2. WebGL contexts. Browsers cap how many can be live (~16 in Chrome) and
+        start discarding the oldest past that, which shows up as blank or frozen
+        canvases. There are 27 viewers here, so one is torn back down to its
+        poster when it scrolls well clear, keeping at most MAX_LIVE alive --
+        whichever sits furthest from the viewport is evicted first.
+
+     On save-data / 2G the heavy worlds stay behind an explicit tap.
      Both worlds and assets auto-rotate once loaded. */
   var A3 = window.VW_A3D || [], W3 = window.VW_W3D || [];
 
+  var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  var thrifty = !!(conn && (conn.saveData ||
+      /^(slow-)?2g$/.test(conn.effectiveType || "")));
+
+  var MAX_LIVE = 8;
+  var live = [];              // stages that currently hold a <model-viewer>
+
+  // Heavy models (the worlds) queue up and load one at a time. Firing all six
+  // at once would put ~39 MB in flight together, so the first scene would appear
+  // no sooner than the last. Serialised, the top card is interactive quickly and
+  // the rest fill in behind it.
+  var queue = [], busy = false;
+  function pump(){
+    if (busy || !queue.length) return;
+    busy = true;
+    var job = queue.shift();
+    job(function(){ busy = false; pump(); });
+  }
+  function enqueue(job){ queue.push(job); pump(); }
+
+  function vpDist(el){
+    var r = el.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < innerHeight) return 0;
+    return r.top >= innerHeight ? r.top - innerHeight : -r.bottom;
+  }
+
+  function evictIfNeeded(keep){
+    if (live.length <= MAX_LIVE) return;
+    live.slice()
+        .filter(function(s){ return s !== keep; })
+        .sort(function(a,b){ return vpDist(b) - vpDist(a); })
+        .slice(0, live.length - MAX_LIVE)
+        .forEach(function(s){ s._unmount && s._unmount(); });
+  }
+
   function mkStage(host, src, opts){
     var stage=document.createElement("div"); stage.className="stage";
-    if(opts.poster){
+
+    function addPoster(){
+      if(!opts.poster || stage.querySelector(".poster")) return;
       var ps=document.createElement("img");
       ps.className="poster"; ps.src=opts.poster; ps.alt=opts.name+" preview";
       ps.loading="lazy"; ps.decoding="async";
-      stage.appendChild(ps);
+      stage.insertBefore(ps, stage.firstChild);
     }
+    addPoster();
     if(opts.badge){
       var bd=document.createElement("span"); bd.className="badge3d"; bd.textContent=opts.badge;
       stage.appendChild(bd);
     }
-    var btn=document.createElement("button");
-    btn.className="load"; btn.type="button";
-    btn.setAttribute("aria-label","Load 3D model: "+opts.name);
-    btn.innerHTML='<span class="ico">3D</span><span class="tx">'+esc(opts.cta||"View in 3D")+
-                  '</span><span class="sz">'+esc(opts.mb)+' MB</span>';
-    btn.addEventListener("click", function(){
-      btn.remove();
+
+    function mount(){
+      if(stage._mv) return;
       var ps=stage.querySelector(".poster"); if(ps) ps.remove();
+      var btn=stage.querySelector(".load"); if(btn) btn.remove();
       var sp=document.createElement("div"); sp.className="spin"; sp.textContent="Loading…";
       stage.appendChild(sp);
       var mv=document.createElement("model-viewer");
@@ -627,9 +673,43 @@ footer a{color:var(--ink-2)}
       mv.addEventListener("load", function(){ sp.remove(); });
       mv.addEventListener("error", function(){ sp.textContent="Could not load model."; });
       stage.appendChild(mv);
-    });
-    stage.appendChild(btn);
+      stage._mv=mv;
+      live.push(stage);
+      evictIfNeeded(stage);
+    }
+
+    function unmount(){
+      if(!stage._mv) return;
+      stage._mv.remove();                 // frees the WebGL context
+      stage._mv=null;
+      var sp=stage.querySelector(".spin"); if(sp) sp.remove();
+      live=live.filter(function(s){ return s!==stage; });
+      addPoster();
+    }
+    stage._unmount=unmount;
+
+    // On a metered connection, keep the heavy worlds behind an explicit tap.
+    var manual = thrifty && opts.mb > 3;
+    if(manual){
+      var b2=document.createElement("button");
+      b2.className="load"; b2.type="button";
+      b2.setAttribute("aria-label","Load 3D model: "+opts.name);
+      b2.innerHTML='<span class="ico">3D</span><span class="tx">'+esc(opts.cta||"View in 3D")+
+                   '</span><span class="sz">'+esc(opts.mb)+' MB</span>';
+      b2.addEventListener("click", mount);
+      stage.appendChild(b2);
+    }
     host.appendChild(stage);
+    if(manual) return;
+
+    if(!("IntersectionObserver" in window)){ mount(); return; }
+    // near ring mounts; far ring tears down, bounding live WebGL contexts
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting) mount(); });
+    }, {rootMargin:"600px 0px"}).observe(stage);
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(!e.isIntersecting) unmount(); });
+    }, {rootMargin:"1500px 0px"}).observe(stage);
   }
 
   /* worlds */
