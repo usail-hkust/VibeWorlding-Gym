@@ -330,8 +330,9 @@ cd verl
 DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft.sh
 
 # multi node (run on every node, varying NODE_RANK)
-NODE_RANK=0 MASTER_ADDR=<master-node-ip> \
-DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft_multinode.sh
+NODE_RANK=0 MASTER_ADDR=<master-node-ip> DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft_multinode.sh
+NODE_RANK=1 MASTER_ADDR=<master-node-ip> DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft_multinode.sh
+NODE_RANK=2 MASTER_ADDR=<master-node-ip> DATA_DIR=../data/sft_packed_download/data/sft_parquet_example bash run_map_gen_sft_multinode.sh
 ```
 
 Everything is overridable by environment variable, so you should not need to edit
@@ -427,8 +428,14 @@ BROKER_WORKERS=16 ./start_broker.sh     # background, auto-restarts on crash
 On the **training node**:
 
 ```bash
+# single node
 cd verl
 VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
+
+# multi node (run on every node, varying NODE_RANK)
+NODE_RANK=0 MASTER_ADDR=<master-node-ip> VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
+NODE_RANK=1 MASTER_ADDR=<master-node-ip> VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
+NODE_RANK=2 MASTER_ADDR=<master-node-ip> VIBEWORLD_LLM_TRANSPORT=filerpc bash run_map_gen_grpo.sh
 ```
 
 ---
