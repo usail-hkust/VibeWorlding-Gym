@@ -477,6 +477,11 @@ our local models (`vibeworlder`), Gemini official (`gemini-flash`,
 
 ## 8. Citation
 
+If you use the VibeWorlding-Gym framework, VWE-Bench dataset, or substantially
+derived materials from this project in your research, please cite the
+following paper:
+
+
 ```bibtex
 @article{vibeworlding2026,
   title   = {VibeWorlding: Can Multimodal Agents Construct 3D Open Worlds End-to-End?},
@@ -487,3 +492,15 @@ our local models (`vibeworlder`), Gemini official (`gemini-flash`,
 }
 
 ```
+
+
+
+The VWE-Bench dataset is released under the Apache License 2.0 as indicated
+on its Hugging Face dataset card.
+
+This repository may include or depend on third-party software, models,
+datasets, 3D assets, or other materials that are subject to their own
+licenses and terms. Such third-party materials are not relicensed by this
+NOTICE or by the Apache License applicable to the original VibeWorlding
+code. Users are responsible for complying with the applicable licenses and
+terms for such third-party materials.
